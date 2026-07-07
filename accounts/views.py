@@ -23,9 +23,9 @@ def login_view(request):
                 return redirect('staff_dashboard')
 
             else:
-                return redirect('login')
+                return redirect('login-view')
 
-        return redirect('login')
+        return redirect('login-view')
 
     return render(request, 'login.html')
 
