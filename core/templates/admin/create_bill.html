@@ -1,0 +1,304 @@
+{% extends 'admin.html' %}
+
+{% block content %}
+<!-- Top Management Navigation Sub-Bar -->
+<header class="top-navbar">
+    <div class="page-title">
+        <h1 id="current-view-title">Generate Utility Statement</h1>
+    </div>
+    
+    <div class="admin-profile">
+        <div class="admin-info">
+        
+            <small>System Administrator</small>
+        </div>
+        <div class="admin-avatar">AD</div>
+    </div>
+</header>
+
+<!-- Main Workspace Body Area -->
+<div class="workspace">
+    <div class="data-section" style="max-width: 700px; margin: 0 auto;">
+        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>New Meter Reading & Invoice Entry</h3>
+            <a href="#" class="btn-back" style="font-size: 13px; text-decoration: none; color: var(--primary-text); font-weight: 600;">
+                <i class="fa-solid fa-arrow-left-long"></i> Back to Ledger
+            </a>
+        </div>
+        
+        <!-- Statement Processing Core Form Mapping fields straight to your Django Model definitions -->
+        <form method="POST" action="" id="billingGenerationForm" style="padding: 20px 0;">
+            {% csrf_token %}
+            
+            <!-- 1. Customer Context Entity Target Locator -->
+            <div class="form-group">
+                <label for="customer">Target Consumer Account <span class="required">*</span></label>
+                <div class="select-search-wrapper">
+                    <select name="customer" id="customer" required onchange="updatePreviousReading(this)">
+                        <option value="" data-prev="0.00">
+                            -- Choose Registered Account or Search Name --
+                        </option>
+
+                        {% for item in customer_data %}
+                        <option
+                            value="{{ item.customer.id }}"
+                            data-prev="{{ item.previous }}">
+
+                            {{ item.customer.account_number }}
+                            —
+                            {{ item.customer.fullname }}
+
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <small class="field-help">Selecting a valid user profile automatically loads their last recorded database log reference.</small>
+            </div>
+
+            <!-- 2. Statement Period & Absolute Expiry Threshold Configuration -->
+            <div class="form-row-dual">
+                <div class="form-group">
+                    <label for="billing_month">Billing Coverage Month <span class="required">*</span></label>
+                    <input type="date" name="billing_month" id="billing_month" required value="2026-07-01">
+                </div>
+                <div class="form-group">
+                    <label for="due_date">Settlement Due Date <span class="required">*</span></label>
+                    <input type="date" name="due_date" id="due_date" required value="2026-07-15">
+                </div>
+            </div>
+
+            <hr style="border: none; border-top: 1px dashed var(--border-classic); margin: 20px 0;">
+
+            <!-- 3. Hardware Reading Telemetry Input Points -->
+            <div class="form-row-dual">
+                <div class="form-group">
+                    <label for="previous_reading">Previous Reading (m³) <span class="required">*</span></label>
+                    <input type="number" step="0.01" name="previous_reading" id="previous_reading" placeholder="0.00" required readonly style="background-color: #f8fafc; font-family: monospace;">
+                </div>
+                <div class="form-group">
+                    <label for="current_reading">Current Reading Entry (m³) <span class="required">*</span></label>
+                    <input type="number" step="0.01" name="current_reading" id="current_reading" placeholder="0.00" required oninput="calculateLiveBillSummary()" style="font-family: monospace; font-weight: 600;">
+                </div>
+            </div>
+
+            <!-- 4. Real-time Calculation Summary Matrix Cards -->
+            <div class="live-calculation-grid">
+                <div class="calc-card">
+                    <span class="calc-label">Computed Consumption</span>
+                    <div class="calc-value"><span id="live_consumption">0.00</span> <small>m³</small></div>
+                </div>
+                <div class="calc-card">
+                    <span class="calc-label">Base Variable Rate</span>
+                    <div class="calc-value">₱<span id="live_rate">25.00</span></div>
+                    <input type="hidden" name="rate_per_cubic" id="rate_per_cubic" value="25.00">
+                </div>
+                <div class="calc-card total-highlight">
+                    <span class="calc-label">Gross Amount Payable</span>
+                    <div class="calc-value">₱<span id="live_total">0.00</span></div>
+                </div>
+            </div>
+
+            <!-- 5. Default Workflow Lifecycle State Injection -->
+            <input type="hidden" name="status" value="unpaid">
+
+            <!-- 6. Management Action Control Deck -->
+            <div class="form-actions-footer">
+                <button type="button" class="btn-secondary" onclick="window.history.back()">Cancel Entry</button>
+                <button type="submit" class="btn-submit">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Commit & Post Statement
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Form Formatting Framework & Interface Styles -->
+<style>
+    .form-group {
+        margin-bottom: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-group label {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--bg-navy);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .required {
+        color: #dc2626;
+    }
+
+    .form-group select,
+    .form-group input[type="date"],
+    .form-group input[type="number"] {
+        height: 38px;
+        padding: 8px 12px;
+        font-size: 13px;
+        border: 1px solid var(--border-classic);
+        border-radius: 3px;
+        color: var(--primary-text);
+        background-color: #ffffff;
+        box-sizing: border-box;
+    }
+
+    .form-group select:focus,
+    .form-group input:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+    }
+
+    .field-help {
+        font-size: 11px;
+        color: #64748b;
+    }
+
+    .form-row-dual {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    /* Automatic Pricing Evaluation Interface Cards Blocks */
+    .live-calculation-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin: 24px 0;
+    }
+
+    .calc-card {
+        background-color: #f1f5f9;
+        border: 1px solid var(--border-classic);
+        border-radius: 3px;
+        padding: 14px;
+        text-align: center;
+    }
+
+    .calc-card .calc-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        font-weight: 600;
+        color: #64748b;
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    .calc-card .calc-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--bg-navy);
+        font-family: monospace;
+    }
+
+    .calc-card .calc-value small {
+        font-size: 12px;
+        color: #64748b;
+    }
+
+    /* Core Action Color Callout Mapping rules */
+    .calc-card.total-highlight {
+        background-color: #fef2f2;
+        border-color: #fee2e2;
+    }
+
+    .calc-card.total-highlight .calc-label {
+        color: #991b1b;
+    }
+
+    .calc-card.total-highlight .calc-value {
+        color: #dc2626;
+        font-size: 22px;
+    }
+
+    .form-actions-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .btn-secondary {
+        background-color: #ffffff;
+        border: 1px solid var(--border-classic);
+        color: #475569;
+        padding: 10px 20px;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 3px;
+        cursor: pointer;
+    }
+
+    .btn-secondary:hover {
+        background-color: #f8fafc;
+        color: var(--bg-navy);
+    }
+
+    .btn-submit {
+        background-color: var(--bg-navy);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        color: #ffffff;
+        padding: 10px 24px;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        border-radius: 3px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-submit:hover {
+        background-color: #1e3a6d;
+    }
+</style>
+
+<!-- Live Telemetry Matrix Math Evaluation Module Script -->
+<script>
+    // Fired when the consumer identity locator input alters matching index
+function updatePreviousReading(selectElement) {
+
+    const option = selectElement.options[selectElement.selectedIndex];
+
+    document.getElementById("previous_reading").value =
+        parseFloat(option.dataset.prev || 0).toFixed(2);
+
+    document.getElementById("current_reading").value = "";
+
+    calculateLiveBillSummary();
+}
+
+    // Interactive computation engine mimicking model `.save()` override functions
+    function calculateLiveBillSummary() {
+        const previousReading = parseFloat(document.getElementById('previous_reading').value) || 0;
+        const currentReading = parseFloat(document.getElementById('current_reading').value) || 0;
+        const ratePerCubic = parseFloat(document.getElementById('rate_per_cubic').value) || 25.00;
+
+        // Visual validation flag to clear styling glitches if inputs cross negative baselines
+        if (currentReading < previousReading) {
+            document.getElementById('current_reading').style.borderColor = '#dc2626';
+            resetLiveCalculations();
+            return;
+        } else {
+            document.getElementById('current_reading').style.borderColor = 'var(--border-classic)';
+        }
+
+        const consumption = currentReading - previousReading;
+        const totalAmount = consumption * ratePerCubic;
+
+        // Inject calculations into display nodes
+        document.getElementById('live_consumption').innerText = consumption.toFixed(2);
+        document.getElementById('live_total').innerText = totalAmount.toFixed(2);
+    }
+
+    function resetLiveCalculations() {
+        document.getElementById('live_consumption').innerText = "0.00";
+        document.getElementById('live_total').innerText = "0.00";
+    }
+</script>
+{% endblock %}

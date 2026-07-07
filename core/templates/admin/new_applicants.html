@@ -1,0 +1,210 @@
+{% extends 'admin.html' %}
+
+{% block content %}
+<!-- Top Management Navigation Sub-Bar -->
+<header class="top-navbar">
+    <div class="page-title">
+        <h1 id="current-view-title">New Applicants</h1>
+    </div>
+    
+    <div class="admin-profile">
+        <div class="admin-info">
+           
+            <small>System Administrator</small>
+        </div>
+        <div class="admin-avatar">AD</div>
+    </div>
+</header>
+
+<!-- Main Workspace Body Area -->
+<div class="workspace">
+
+    <!-- Action Bar Section -->
+
+    <!-- Main Table Container -->
+    <div class="data-section">
+        <div class="section-header">
+            <h3>Pending Applications Review Panel</h3>
+        </div>
+        <div class="table-container">
+            <table class="classic-table">
+                <thead>
+                    <tr>
+                        <th>Applicant Full Name</th>
+                        <th>Email Address</th>
+                        <th>Phone Number</th>
+                        <th>Service Address</th>
+                        <th style="text-align: center;">House Image</th>
+                        <th>Status</th>
+                        <th style="text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Mock Row 1 -->
+                     {% for i in applicants%}
+                    <tr>
+                        <td class="font-semibold">{{ i.fullname }}</td>
+                        <td>{{ i.email }}</td>
+                        <td>{{ i.phone }}</td>
+                        <td>{{ i.address }}</td>
+                        <td style="text-align: center;">
+                            <button class="btn-view-img" onclick="viewHouseImage('{{ i.image.url }}')">
+                                <i class="fa-solid fa-image"></i> View Image
+                            </button>
+                        </td>
+                        <td><span class="badge pending">{{ i.status }}</span></td>
+                        <td>
+                            <form method="POST"
+                                action="{% url 'approve_applicant' i.id %}"
+                                style="display:inline;">
+                                {% csrf_token %}
+                                <button class="btn-action approve">
+                                    <i class="fa-solid fa-check"></i>
+                                    Activate
+                                </button>
+                            </form>
+
+                            <form method="POST"
+                                action="{% url 'decline_applicant' i.id %}"
+                                style="display:inline;">
+                                {% csrf_token %}
+                                <button class="btn-action decline">
+                                    <i class="fa-solid fa-xmark"></i>
+                                    Decline
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Extra Inline Styles Specific to the Applicants Screen -->
+<style>
+    /* Content Specific UI Elements */
+    .action-bar {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: -6px;
+    }
+
+    .btn-primary {
+        background-color: var(--bg-navy);
+        color: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        padding: 10px 18px;
+        border-radius: 3px;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover {
+        background-color: #1e3a6d;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    .font-semibold {
+        font-weight: 600;
+        color: var(--bg-navy);
+    }
+
+    /* Thumbnail Button Style */
+    .btn-view-img {
+        background-color: #f1f5f9;
+        border: 1px solid var(--border-classic);
+        padding: 6px 12px;
+        border-radius: 3px;
+        font-size: 12px;
+        color: var(--primary-text);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-view-img:hover {
+        background-color: #e2e8f0;
+        color: var(--accent-blue);
+    }
+
+    /* Traditional Action Button Groups */
+    .action-btn-group {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-action {
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 3px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.15s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .btn-action.approve {
+        background-color: #ffffff;
+        border: 1px solid var(--success-green);
+        color: var(--success-green);
+    }
+
+    .btn-action.approve:hover {
+        background-color: var(--success-green);
+        color: #ffffff;
+    }
+
+    .btn-action.decline {
+        background-color: #ffffff;
+        border: 1px solid #dc2626;
+        color: #dc2626;
+    }
+
+    .btn-action.decline:hover {
+        background-color: #dc2626;
+        color: #ffffff;
+    }
+</style>
+
+<!-- Administrative Logic Intercepts -->
+<script>
+    // Action script management for workflow execution
+    function handleApplication(actionType, applicantName) {
+        if (actionType === 'approve') {
+            if (confirm(`Authorize activation for ${applicantName}'s physical utility connection configuration?`)) {
+                console.log(`Backend Dispatching Status: APPROVED -> ${applicantName}`);
+                // Implement backend template API update trigger pipeline here
+            }
+        } else if (actionType === 'decline') {
+            if (confirm(`Are you certain you wish to decline and drop the registration records for ${applicantName}?`)) {
+                console.log(`Backend Dispatching Status: DECLINED -> ${applicantName}`);
+                // Implement backend template API drop trigger pipeline here
+            }
+        }
+    }
+
+    // Modal display structural simulation for survey images
+    function viewHouseImage(imageUrl) {
+        console.log(`Opening secure window viewport targeting record item resource: ${imageUrl}`);
+        window.open(imageUrl, '_blank', 'width=800,height=600,resizable=yes');
+    }
+
+</script>
+{% endblock %}

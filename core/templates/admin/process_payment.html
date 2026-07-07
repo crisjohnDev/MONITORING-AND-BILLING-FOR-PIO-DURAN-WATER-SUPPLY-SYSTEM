@@ -1,0 +1,330 @@
+{% extends 'admin.html' %}
+
+{% block content %}
+<header class="top-navbar">
+    <div class="page-title">
+        <h1 id="current-view-title">Process Collection Receipt</h1>
+    </div>
+    
+    <div class="admin-profile">
+        <div class="admin-info">
+            
+            <small>System Administrator</small>
+        </div>
+        <div class="admin-avatar">AD</div>
+    </div>
+</header>
+
+<div class="workspace">
+    <div class="data-section" style="max-width: 700px; margin: 0 auto;">
+        <div class="section-header">
+            <h3>Invoice Settlement & Cash Counter Ledger</h3>
+        </div>
+
+        <form method="POST" style="padding: 20px 0;">
+            {% csrf_token %}
+
+            <div class="form-row-dual">
+                <div class="form-group">
+                    <label>Account Number</label>
+                    <input type="text" readonly class="readonly-field font-mono" value="{{ bill.customer.account_number }}">
+                </div>
+                <div class="form-group">
+                    <label>Customer Name</label>
+                    <input type="text" readonly class="readonly-field font-semibold" value="{{ bill.customer.fullname }}">
+                </div>
+            </div>
+
+            <div class="form-row-dual">
+                <div class="form-group">
+                    <label>Billing Month</label>
+                    <input type="text" readonly class="readonly-field" value="{{ bill.billing_month|date:'F Y' }}">
+                </div>
+                <div class="form-group">
+                    <label>Due Date</label>
+                    <input type="text" readonly class="readonly-field font-semibold" style="color: #b45309;" value="{{ bill.due_date|date:'F d, Y' }}">
+                </div>
+            </div>
+
+            <hr class="section-divider">
+
+            <div class="form-row-triple">
+                <div class="form-group">
+                    <label>Previous Reading</label>
+                    <input type="text" readonly class="readonly-field font-mono text-right" value="{{ bill.previous_reading }} m³">
+                </div>
+                <div class="form-group">
+                    <label>Current Reading</label>
+                    <input type="text" readonly class="readonly-field font-mono text-right" value="{{ bill.current_reading }} m³">
+                </div>
+                <div class="form-group">
+                    <label>Consumption</label>
+                    <input type="text" readonly class="readonly-field font-mono text-right font-semibold" value="{{ bill.consumption }} m³">
+                </div>
+            </div>
+
+            <hr class="section-divider">
+
+            <div class="live-calculation-grid">
+                <div class="calc-card total-highlight">
+                    <span class="calc-label">Total Amount Due</span>
+                    <div class="calc-value">₱<span id="display_amount_due">{{ bill.total_amount }}</span></div>
+                    <input type="hidden" id="amount_due" value="{{ bill.total_amount }}">
+                </div>
+                
+                <div class="calc-card cash-input-card">
+                    <span class="calc-label" style="color: var(--bg-navy);">Cash Received ₱ <span class="required">*</span></span>
+                    <input 
+                        id="amount_paid" 
+                        name="amount_paid" 
+                        type="number" 
+                        step="0.01" 
+                        required 
+                        placeholder="0.00"
+                        oninput="calculateChange()"
+                        class="cash-input font-mono"
+                    >
+                </div>
+
+                <div class="calc-card change-highlight">
+                    <span class="calc-label">Calculated Change</span>
+                    <div class="calc-value">₱<span id="change_display">0.00</span></div>
+                    <input type="hidden" id="change" value="0.00">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="remarks">Transaction Remarks / Internal Auditor Notes</label>
+                <textarea name="remarks" id="remarks" rows="3" placeholder="Add payment reference notes, check codes or receipt updates..."></textarea>
+            </div>
+
+            <div class="form-actions-footer">
+                <a href="{% url 'payments' %}" class="btn-secondary">Cancel Entry</a>
+                <button type="submit" class="btn-submit">
+                    <i class="fa-solid fa-cash-register"></i> Complete Transaction
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .form-group {
+        margin-bottom: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-group label {
+        font-size: 12px;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .required {
+        color: #dc2626;
+    }
+
+    /* Input Field Normalization */
+    .readonly-field,
+    .form-group textarea {
+        height: 38px;
+        padding: 8px 12px;
+        font-size: 13px;
+        border: 1px solid var(--border-classic);
+        border-radius: 3px;
+        color: var(--primary-text);
+        background-color: #ffffff;
+        box-sizing: border-box;
+    }
+
+    .readonly-field {
+        background-color: #f8fafc;
+        color: #334155;
+    }
+
+    .form-group textarea {
+        height: auto;
+        resize: vertical;
+        font-family: inherit;
+    }
+
+    .form-group textarea:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+    }
+
+    /* Layout Positioning Grids */
+    .form-row-dual {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .form-row-triple {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+
+    .section-divider {
+        border: none;
+        border-top: 1px dashed var(--border-classic);
+        margin: 20px 0;
+    }
+
+    .font-mono { font-family: monospace; font-size: 14px; }
+    .font-semibold { font-weight: 600; color: var(--bg-navy); }
+    .text-right { text-align: right; }
+
+    /* Interactive Accounting Matrix Card Layouts */
+    .live-calculation-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        margin: 24px 0;
+    }
+
+    .calc-card {
+        background-color: #f8fafc;
+        border: 1px solid var(--border-classic);
+        border-radius: 4px;
+        padding: 16px 12px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .calc-card .calc-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: #64748b;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .calc-card .calc-value {
+        font-size: 20px;
+        font-weight: 700;
+        font-family: monospace;
+    }
+
+    /* Total Balance Red Highlight Styles */
+    .calc-card.total-highlight {
+        background-color: #fef2f2;
+        border-color: #fee2e2;
+    }
+    .calc-card.total-highlight .calc-label { color: #991b1b; }
+    .calc-card.total-highlight .calc-value { color: #dc2626; }
+
+    /* Active Input Field Card Styles */
+    .calc-card.cash-input-card {
+        background-color: #ffffff;
+        border-color: #cbd5e1;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+    }
+    
+    .cash-input {
+        width: 100%;
+        height: 38px;
+        text-align: center;
+        font-size: 18px;
+        font-weight: 700;
+        border: 1px solid var(--accent-blue);
+        border-radius: 3px;
+        color: var(--bg-navy);
+        background-color: #fff;
+    }
+    
+    .cash-input:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
+    }
+
+    /* Cash Return Green Highlight Styles */
+    .calc-card.change-highlight {
+        background-color: #f0fdf4;
+        border-color: #bbf7d0;
+    }
+    .calc-card.change-highlight .calc-label { color: #166534; }
+    .calc-card.change-highlight .calc-value { color: #15803d; font-size: 22px; }
+
+    /* Footer Action Control Options Buttons */
+    .form-actions-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 15px;
+        padding-top: 15px;
+    }
+
+    .btn-secondary {
+        background-color: #ffffff;
+        border: 1px solid var(--border-classic);
+        color: #475569;
+        padding: 10px 22px;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 3px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .btn-secondary:hover {
+        background-color: #f1f5f9;
+        color: var(--bg-navy);
+    }
+
+    .btn-submit {
+        background-color: var(--bg-navy);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        color: #ffffff;
+        padding: 10px 26px;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        border-radius: 3px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: background-color 0.2s ease;
+    }
+
+    .btn-submit:hover {
+        background-color: #1e3a6d;
+    }
+
+    @media (max-width: 640px) {
+        .form-row-dual, .form-row-triple, .live-calculation-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<script>
+    function calculateChange() {
+        const due = parseFloat(document.getElementById("amount_due").value) || 0;
+        const paid = parseFloat(document.getElementById("amount_paid").value) || 0;
+
+        let change = paid - due;
+
+        if (change < 0) {
+            change = 0;
+        }
+
+        // Apply string fixes directly to both text trackers and the hidden value form arrays
+        document.getElementById("change").value = change.toFixed(2);
+        document.getElementById("change_display").innerText = change.toFixed(2);
+    }
+</script>
+{% endblock %}

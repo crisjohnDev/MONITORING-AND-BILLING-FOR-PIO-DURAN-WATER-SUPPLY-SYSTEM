@@ -1,0 +1,278 @@
+{% extends 'admin.html' %}
+
+{% block content %}
+<!-- Top Management Navigation Sub-Bar -->
+<header class="top-navbar">
+    <div class="page-title">
+        <h1 id="current-view-title">Billing & Utility Ledgers</h1>
+    </div>
+    
+    <div class="admin-profile">
+        <div class="admin-info">
+          
+            <small>System Administrator</small>
+        </div>
+        <div class="admin-avatar">AD</div>
+    </div>
+</header>
+
+<!-- Main Workspace Body Area -->
+<div class="workspace">
+
+    <!-- Action Bar Section with Search & Filter Controls -->
+    <div class="action-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div class="filter-group" style="display: flex; gap: 10px;">
+            <div class="search-wrapper">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="tableSearch" placeholder="Search accounts or customers..." onkeyup="filterBillingTable()">
+            </div>
+            <select id="statusFilter" onchange="filterBillingTable()" style="height: 36px; padding: 0 10px; border: 1px solid var(--border-classic); border-radius: 3px; font-size: 13px; color: var(--primary-text);">
+                <option value="">All Statuses</option>
+                <option value="unpaid">Unpaid Only</option>
+                <option value="paid">Paid Only</option>
+            </select>
+        </div>
+        
+        <a href="{% url 'create_bill' %}" class="btn-primary" id="createInvoiceBtn" style="text-decoration: none;">
+            <i class="fa-solid fa-file-invoice-dollar"></i>
+            <span>Generate New Bill</span>
+        </a>
+    </div>
+
+    <!-- Main Table Container -->
+    <div class="data-section">
+        <div class="section-header">
+            <h3>Utility Statements & Consumption Registry</h3>
+        </div>
+        <div class="table-container">
+            <table class="classic-table" id="billingTable">
+            <thead>
+                <tr>
+                    <th>Account / Customer</th>
+                    <th>Billing Month</th>
+                    <th style="text-align: right;">Prev Reading</th>
+                    <th style="text-align: right;">Curr Reading</th>
+                    <th style="text-align: right;">Consumption (m³)</th>
+                    <th style="text-align: right;">Rate / m³</th>
+                    <th style="text-align: right;">Total Amount</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for bill in billings %}
+            <tr data-status="{{ bill.status }}">
+
+                <td class="font-semibold">
+                    <div>{{ bill.customer.fullname }}</div>
+                    <small style="color:#64748b;font-weight:normal;">
+                        {{ bill.customer.account_number }}
+                    </small>
+                </td>
+
+                <td>{{ bill.billing_month|date:"F Y" }}</td>
+
+                <td style="text-align:right;font-family:monospace;">
+                    {{ bill.previous_reading }}
+                </td>
+
+                <td style="text-align:right;font-family:monospace;">
+                    {{ bill.current_reading }}
+                </td>
+
+                <td style="text-align:right;font-family:monospace;font-weight:600;">
+                    {{ bill.consumption }}
+                </td>
+
+                <td style="text-align:right;color:#64748b;font-family:monospace;">
+                    ₱{{ bill.rate_per_cubic }}
+                </td>
+
+                <td style="text-align:right;font-weight:700;font-family:monospace;
+                    {% if bill.status == 'paid' %}
+                        color:#166534;
+                    {% else %}
+                        color:#dc2626;
+                    {% endif %}
+                ">
+                    ₱{{ bill.total_amount }}
+                </td>
+
+                <td>{{ bill.due_date|date:"F d, Y" }}</td>
+
+                <td>
+                    {% if bill.status == "paid" %}
+                        <span class="badge status-paid">Paid</span>
+                    {% else %}
+                        <span class="badge status-unpaid">Unpaid</span>
+                    {% endif %}
+                </td>
+
+            </tr>
+
+            {% empty %}
+
+            <tr>
+                <td colspan="9" style="text-align:center;padding:20px;">
+                    No billing records found.
+                </td>
+            </tr>
+
+            {% endfor %}
+            </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Extra Inline Styles Specific to Billing Subsystem Metrics -->
+<style>
+    /* Traditional Administrative Search Field Component */
+    .search-wrapper {
+        position: relative;
+        width: 280px;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 13px;
+    }
+
+    .search-wrapper input[type="text"] {
+        width: 100%;
+        height: 36px;
+        padding: 8px 12px 8px 36px;
+        font-size: 13px;
+        color: var(--primary-text);
+        background-color: #ffffff;
+        border: 1px solid var(--border-classic);
+        border-radius: 3px;
+        box-sizing: border-box;
+    }
+
+    .search-wrapper input[type="text"]:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+    }
+
+    .font-semibold {
+        font-weight: 600;
+        color: var(--bg-navy);
+    }
+
+    /* Status Badge Mapping Styles */
+    .badge.status-unpaid {
+        background-color: #fef2f2;
+        border: 1px solid #fee2e2;
+        color: #991b1b;
+    }
+
+    .badge.status-paid {
+        background-color: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+    }
+
+    /* Form & Action Layout Alignment Items */
+    .action-btn-group {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .btn-action {
+        padding: 5px 10px;
+        font-size: 11px;
+        font-weight: 700;
+        border-radius: 3px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background-color: #ffffff;
+        border: 1px solid var(--border-classic);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        transition: all 0.15s ease;
+    }
+
+    .btn-action.collect {
+        border-color: var(--success-green);
+        color: var(--success-green);
+    }
+
+    .btn-action.collect:hover {
+        background-color: var(--success-green);
+        color: #ffffff;
+    }
+
+    .btn-action.print:hover {
+        background-color: #f1f5f9;
+        color: var(--bg-navy);
+        border-color: #94a3b8;
+    }
+
+    .btn-primary {
+        background-color: var(--bg-navy);
+        color: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        padding: 10px 18px;
+        border-radius: 3px;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary:hover {
+        background-color: #1e3a6d;
+    }
+</style>
+
+<!-- Transaction Flow Control Scripts -->
+<script>
+    function processPayment(customerName, amount) {
+        if (confirm(`Confirm collection event request? Processing receipt generation for ${customerName} in the amount of ₱${amount}.`)) {
+            console.log(`Dispatched Billing Action: UPDATE_STATUS -> PAID for ${customerName}`);
+            // Link your backend API updating views pipeline here
+        }
+    }
+
+    function printInvoice(accountNo) {
+        console.log(`Generating dedicated printing layout stack for: ${accountNo}`);
+        alert(`Opening statement printing print frame for ${accountNo}...`);
+    }
+
+    function viewReceipt(accountNo) {
+        console.log(`Pulling auditing trace logs for account: ${accountNo}`);
+    }
+
+    // Dynamic filtering engine balancing text strings and ledger metadata states
+    function filterBillingTable() {
+        const searchText = document.getElementById('tableSearch').value.toLowerCase();
+        const selectedStatus = document.getElementById('statusFilter').value;
+        const rows = document.querySelectorAll('#billingTable tbody tr');
+
+        rows.forEach(row => {
+            const rowText = row.textContent.toLowerCase();
+            const rowStatus = row.getAttribute('data-status');
+            
+            const matchesSearch = rowText.includes(searchText);
+            const matchesStatus = !selectedStatus || rowStatus === selectedStatus;
+
+            if (matchesSearch && matchesStatus) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        });
+    }
+</script>
+{% endblock %}

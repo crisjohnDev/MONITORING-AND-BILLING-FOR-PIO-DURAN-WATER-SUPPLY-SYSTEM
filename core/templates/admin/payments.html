@@ -1,0 +1,244 @@
+{% extends 'admin.html' %}
+
+{% block content %}
+<header class="top-navbar">
+    <div class="page-title">
+        <h1 id="current-view-title">Collection & Payments</h1>
+    </div>
+    
+    <div class="admin-profile">
+        <div class="admin-info">
+            
+            <small>System Administrator</small>
+        </div>
+        <div class="admin-avatar">AD</div>
+    </div>
+</header>
+
+<div class="workspace">
+
+    <div class="action-bar">
+        <div class="search-container">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input 
+                type="text" 
+                id="paymentSearchInput" 
+                placeholder="Search by Account Number or Full Name..." 
+                onkeyup="executeLivePaymentSearch()"
+                autocomplete="off"
+            >
+        </div>
+    </div>
+
+    <div class="data-section">
+        <div class="section-header">
+            <h3>Account Ledger Registry & Cashier Point</h3>
+        </div>
+        <div class="table-container">
+            <table class="classic-table" id="paymentsTable">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Account Number</th>
+                        <th style="width: 40%;">Full Name</th>
+                        <th style="text-align: center; width: 35%;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bill in billings %}
+                    <tr>
+
+                        <td class="account-cell">
+                            <i class="fa-solid fa-hashtag field-icon"></i>
+                            {{ bill.customer.account_number }}
+                        </td>
+
+                        <td class="font-semibold">
+                            {{ bill.customer.fullname }}
+                        </td>
+
+                        <td>
+                            <div class="action-btn-group">
+                                <a href="{% url 'process_payment' bill.id %}"
+                                class="btn-action process-pay">
+
+                                    <i class="fa-solid fa-wallet"></i>
+                                    Process Payment
+
+                                </a>
+                            </div>
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+                        <td colspan="3" style="text-align:center;padding:20px;">
+                            No unpaid bills found.
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <div id="noResultsAlert" class="empty-state-fallback" style="display: none;">
+                <i class="fa-solid fa-folder-open"></i>
+                <p>No matching consumer account records found.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .action-bar {
+        display: flex;
+        justify-content: flex-start;
+        margin-bottom: -6px;
+    }
+
+    /* Traditional Administrative Search Field Component stretching wider for payment points */
+    .search-container {
+        position: relative;
+        width: 100%;
+        max-width: 460px;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 14px;
+    }
+
+    .search-container input[type="text"] {
+        width: 100%;
+        height: 42px;
+        padding: 8px 12px 8px 42px;
+        font-size: 14px;
+        color: var(--primary-text);
+        background-color: #ffffff;
+        border: 1px solid var(--border-classic);
+        border-radius: 4px;
+        box-sizing: border-box;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        transition: all 0.15s ease;
+    }
+
+    .search-container input[type="text"]:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        box-shadow: 0 4px 12px rgba(29, 78, 216, 0.05);
+    }
+
+    .account-cell {
+        font-family: monospace;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--secondary-text);
+    }
+
+    .field-icon {
+        font-size: 11px;
+        color: #cbd5e1;
+        margin-right: 4px;
+    }
+
+    .font-semibold {
+        font-weight: 600;
+        color: var(--bg-navy);
+    }
+
+    /* Action Trigger Group Interface Arrangements */
+    .action-btn-group {
+        display: flex;
+        justify-content: center;
+    }
+
+    .btn-action.process-pay {
+        background-color: #ffffff;
+        border: 1px solid var(--accent-blue);
+        color: var(--accent-blue);
+        padding: 8px 20px;
+        font-size: 12px;
+        font-weight: 700;
+        border-radius: 3px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.15s ease;
+    }
+
+    .btn-action.process-pay:hover {
+        background-color: var(--accent-blue);
+        color: #ffffff;
+        box-shadow: 0 4px 8px rgba(29, 78, 216, 0.15);
+    }
+
+    /* Empty search layout fallback indicators */
+    .empty-state-fallback {
+        padding: 40px;
+        text-align: center;
+        color: var(--secondary-text);
+    }
+
+    .empty-state-fallback i {
+        font-size: 32px;
+        color: #cbd5e1;
+        margin-bottom: 12px;
+        display: block;
+    }
+
+    .empty-state-fallback p {
+        font-size: 14px;
+        font-weight: 500;
+    }
+</style>
+
+<script>
+    // Live client side execution matching routine for real-time table queries
+    function executeLivePaymentSearch() {
+        const input = document.getElementById('paymentSearchInput');
+        const filter = input.value.toUpperCase().trim();
+        const table = document.getElementById('paymentsTable');
+        const rows = table.getElementsByTagName('tr');
+        const fallbackAlert = document.getElementById('noResultsAlert');
+        
+        let visibleRowCount = 0;
+
+        // Loop begins at index 1 to bypass evaluation on static table column headers
+        for (let i = 1; i < rows.length; i++) {
+            const accountCell = rows[i].getElementsByTagName('td')[0];
+            const nameCell = rows[i].getElementsByTagName('td')[1];
+            
+            if (accountCell && nameCell) {
+                const accountText = accountCell.textContent || accountCell.innerText;
+                const nameText = nameCell.textContent || nameCell.innerText;
+                
+                // Perform query matching evaluation logic on string bounds
+                if (accountText.toUpperCase().indexOf(filter) > -1 || nameText.toUpperCase().indexOf(filter) > -1) {
+                    rows[i].style.display = "";
+                    visibleRowCount++;
+                } else {
+                    rows[i].style.display = "none";
+                }
+            }
+        }
+
+        // Toggle visibility configurations for the empty result warning banner
+        if (visibleRowCount === 0) {
+            table.style.display = "none";
+            fallbackAlert.style.display = "block";
+        } else {
+            table.style.display = "table";
+            fallbackAlert.style.display = "none";
+        }
+    }
+
+</script>
+{% endblock %}
