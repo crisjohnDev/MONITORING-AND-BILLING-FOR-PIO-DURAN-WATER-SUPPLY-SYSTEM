@@ -48,9 +48,15 @@
                         <td>{{ i.phone }}</td>
                         <td>{{ i.address }}</td>
                         <td style="text-align: center;">
-                            <button class="btn-view-img" onclick="viewHouseImage('{{ i.image.url }}')">
-                                <i class="fa-solid fa-image"></i> View Image
-                            </button>
+                            {% if i.image %}
+                                <button class="btn-view-img" onclick="viewHouseImage('{{ i.image.url }}')">
+                                    <i class="fa-solid fa-image"></i> View Image
+                                </button>
+                            {% else %}
+                                <button class="btn-view-img" disabled>
+                                    <i class="fa-solid fa-image"></i> No Image
+                                </button>
+                            {% endif %}
                         </td>
                         <td><span class="badge pending">{{ i.status }}</span></td>
                         <td>
