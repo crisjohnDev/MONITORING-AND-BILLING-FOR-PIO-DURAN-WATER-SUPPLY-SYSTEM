@@ -4,38 +4,85 @@ from customer.models import Customer
 from django.contrib import messages
 from accounts.models import User
 from django.db.models import Q, Sum
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
+from django.utils import timezone
 import re
 from .models import Billing, Payment
 from decimal import Decimal
+from openpyxl import load_workbook
+from collections import defaultdict
 
 @login_required
 def admin_dashboard(request):
 
-    total_connections = Customer.objects.filter(
-        status="active",
-        is_active=True
-    ).count()
+    # ==========================
+    # Dashboard Cards
+    # ==========================
+    total_connections = Customer.objects.count()
 
     pending_applicants = Customer.objects.filter(
-        status="pending"
+        status="new"
     ).count()
 
     current_month = date.today().strftime("%B %Y")
 
     total_bills = Billing.objects.count()
-    paid_bills = Billing.objects.filter(status="paid").count()
+
+    paid_bills = Billing.objects.filter(
+        status="paid"
+    ).count()
 
     if total_bills > 0:
-        collection_rate = round((paid_bills / total_bills) * 100, 1)
+        collection_rate = round(
+            (paid_bills / total_bills) * 100,
+            1
+        )
     else:
         collection_rate = 0
 
+    # ==========================
+    # Recent Billings
+    # ==========================
     recent_billings = (
         Billing.objects
         .select_related("customer")
         .order_by("-created_at")[:10]
     )
+
+    # ==========================
+    # Consumption Per Barangay
+    # ==========================
+    barangay_totals = defaultdict(float)
+
+    billings = Billing.objects.select_related("customer")
+
+    for bill in billings:
+
+        address = bill.customer.address or ""
+
+        barangay = "Unknown"
+
+        # Address Format:
+        # Purok 1, Barangay Caratagan, Pio Duran, Albay
+        # Purok 2, Barangay 1, Pio Duran, Albay
+
+        parts = [part.strip() for part in address.split(",")]
+
+        for part in parts:
+
+            if part.lower().startswith("barangay"):
+                barangay = part
+                break
+
+        barangay_totals[barangay] += float(bill.consumption)
+
+    barangay_consumption = [
+        {
+            "barangay": barangay,
+            "total_consumption": total
+        }
+        for barangay, total in sorted(barangay_totals.items())
+    ]
 
     context = {
         "total_connections": total_connections,
@@ -43,6 +90,7 @@ def admin_dashboard(request):
         "current_month": current_month,
         "collection_rate": collection_rate,
         "recent_billings": recent_billings,
+        "barangay_consumption": barangay_consumption,
     }
 
     return render(
@@ -52,89 +100,191 @@ def admin_dashboard(request):
     )
 
 @login_required
-def new_applicants(request):
-    applicants = Customer.objects.filter(
-        status='pending',
-        is_active=False
-    )
-    return render(request, 'admin/new_applicants.html', {
-        'applicants': applicants
-    })
-
-@login_required
 def customer_list(request):
-    customers = Customer.objects.filter(
-        status__in=['active', 'inactive']
-    ).order_by('fullname')
+    customers = Customer.objects.all()
 
     return render(request, 'admin/customers.html', {
         'customers': customers
     })
 
 @login_required
-def approve_applicant(request, id):
+def add_customer(request):
+
     if request.method == "POST":
-        customer = get_object_or_404(Customer, id=id)
 
-        if not customer.account_number:
-            year = datetime.now().year
+        user = User.objects.create_user(
+            username=request.POST.get('username'),
+            password=request.POST.get('password'),
+            role='customer'  
+        )
 
-            last_customer = Customer.objects.filter(
-                account_number__startswith=f"PWSS-{year}"
-            ).order_by("-account_number").first()
+        Customer.objects.create(
+            user=user,
+            fullname=request.POST.get('fullname'),
+            submitter_no=request.POST.get('submitter_no'),
+            address=request.POST.get('address'),
+        )
 
-            if last_customer:
-                last_number = int(last_customer.account_number.split("-")[-1])
-                next_number = last_number + 1
+        return redirect('customers')
+
+    return render(request, 'admin/add_customer.html')
+
+@login_required
+def import_customers(request):
+
+    if request.method == "POST":
+
+        excel_file = request.FILES.get("excel_file")
+
+        if not excel_file:
+            messages.error(request, "Please upload an Excel file.")
+            return redirect("customers")
+
+        workbook = load_workbook(excel_file)
+        sheet = workbook.active
+
+        # Read header row
+        headers = []
+
+        for cell in sheet[1]:
+            if cell.value:
+                headers.append(str(cell.value).strip().lower())
             else:
-                next_number = 1
+                headers.append("")
 
-            customer.account_number = f"PWSS-{year}-{next_number:04d}"
+        required_headers = [
+            "fullname",
+            "submitter no.",
+            "address",
+        ]
 
-        customer.status = "active"
-        customer.is_active = True
+        for header in required_headers:
+            if header not in headers:
+                messages.error(request, f"Missing column: {header}")
+                return redirect("customers")
 
-        customer.user.is_active = True
-        customer.user.save()
+        fullname_col = headers.index("fullname")
+        submitter_col = headers.index("submitter no.")
+        address_col = headers.index("address")
 
-        customer.save()
+        imported = 0
+        skipped = 0
 
-        messages.success(request, "Applicant activated successfully.")
+        for row in sheet.iter_rows(min_row=2):
 
-    return redirect("new_applicants")
+            fullname = str(row[fullname_col].value or "").strip()
+            submitter_no = str(row[submitter_col].value or "").strip()
+            address = str(row[address_col].value or "").strip()
 
+            # Skip empty rows
+            if not fullname and not submitter_no and not address:
+                continue
 
-@login_required
-def decline_applicant(request, id):
-    if request.method == "POST":
-        customer = get_object_or_404(Customer, id=id)
+            # Skip duplicate customers
+            if Customer.objects.filter(submitter_no=submitter_no).exists():
+                skipped += 1
+                continue
 
-        customer.status = "decline"
-        customer.is_active = False
-        customer.save()
+            # Username will be the submitter number
+            username = submitter_no
 
-        customer.user.is_active = False
-        customer.user.save()
+            # Ensure username is unique
+            counter = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{submitter_no}_{counter}"
+                counter += 1
 
-        messages.success(request, "Applicant declined.")
+            # Create user account
+            user = User.objects.create_user(
+                username=username,
+                password=submitter_no,   # Default password
+                role="customer",
+            )
 
-    return redirect("new_applicants")
+            # Create customer profile
+            Customer.objects.create(
+                user=user,
+                fullname=fullname,
+                submitter_no=submitter_no,
+                address=address,
+                status="old",
+            )
 
-@login_required
-def suspend_customer(request, id):
-    if request.method == "POST":
-        customer = get_object_or_404(Customer, id=id)
+            imported += 1
 
-        customer.status = "inactive"
-        customer.is_active = False
-        customer.save()
+        messages.success(
+            request,
+            f"{imported} customer(s) imported successfully. {skipped} duplicate(s) skipped."
+        )
 
-        customer.user.is_active = False
-        customer.user.save()
-
-        messages.success(request, f"{customer.fullname} has been suspended.")
+        return redirect("customers")
 
     return redirect("customers")
+
+# @login_required
+# def approve_applicant(request, id):
+#     if request.method == "POST":
+#         customer = get_object_or_404(Customer, id=id)
+
+#         if not customer.account_number:
+#             year = datetime.now().year
+
+#             last_customer = Customer.objects.filter(
+#                 account_number__startswith=f"PWSS-{year}"
+#             ).order_by("-account_number").first()
+
+#             if last_customer:
+#                 last_number = int(last_customer.account_number.split("-")[-1])
+#                 next_number = last_number + 1
+#             else:
+#                 next_number = 1
+
+#             customer.account_number = f"PWSS-{year}-{next_number:04d}"
+
+#         customer.status = "active"
+#         customer.is_active = True
+
+#         customer.user.is_active = True
+#         customer.user.save()
+
+#         customer.save()
+
+#         messages.success(request, "Applicant activated successfully.")
+
+#     return redirect("new_applicants")
+
+
+# @login_required
+# def decline_applicant(request, id):
+#     if request.method == "POST":
+#         customer = get_object_or_404(Customer, id=id)
+
+#         customer.status = "decline"
+#         customer.is_active = False
+#         customer.save()
+
+#         customer.user.is_active = False
+#         customer.user.save()
+
+#         messages.success(request, "Applicant declined.")
+
+#     return redirect("new_applicants")
+
+# @login_required
+# def suspend_customer(request, id):
+#     if request.method == "POST":
+#         customer = get_object_or_404(Customer, id=id)
+
+#         customer.status = "inactive"
+#         customer.is_active = False
+#         customer.save()
+
+#         customer.user.is_active = False
+#         customer.user.save()
+
+#         messages.success(request, f"{customer.fullname} has been suspended.")
+
+#     return redirect("customers")
 
 
 @login_required
@@ -151,21 +301,58 @@ def delete_customer(request, id):
 
     return redirect("customers")
 
+
 @login_required
-def reactivate_customer(request, id):
-    if request.method == "POST":
-        customer = get_object_or_404(Customer, id=id)
+def customer_profile(request, customer_id):
 
-        customer.status = "active"
-        customer.is_active = True
-        customer.save()
+    customer = get_object_or_404(Customer, pk=customer_id)
 
-        customer.user.is_active = True
-        customer.user.save()
+    billings = Billing.objects.filter(
+        customer=customer
+    ).order_by("-billing_month")
 
-        messages.success(request, f"{customer.fullname} has been reactivated.")
+    payments = Payment.objects.select_related(
+        "billing"
+    ).filter(
+        billing__customer=customer
+    ).order_by("-payment_date")
 
-    return redirect("customers")
+    total_consumption = billings.aggregate(
+        total=Sum("consumption")
+    )["total"] or Decimal("0.00")
+
+    total_billed = billings.aggregate(
+        total=Sum("total_amount")
+    )["total"] or Decimal("0.00")
+
+    total_paid = payments.aggregate(
+        total=Sum("amount_paid")
+    )["total"] or Decimal("0.00")
+
+    return render(request, "admin/customer_profile.html", {
+        "customer": customer,
+        "billings": billings,
+        "payments": payments,
+        "total_consumption": total_consumption,
+        "total_billed": total_billed,
+        "total_paid": total_paid,
+    })
+
+# @login_required
+# def reactivate_customer(request, id):
+#     if request.method == "POST":
+#         customer = get_object_or_404(Customer, id=id)
+
+#         customer.status = "active"
+#         customer.is_active = True
+#         customer.save()
+
+#         customer.user.is_active = True
+#         customer.user.save()
+
+#         messages.success(request, f"{customer.fullname} has been reactivated.")
+
+#     return redirect("customers")
 
 @login_required
 def billing(request):
@@ -191,8 +378,12 @@ def create_bill(request):
         billing_month = request.POST.get("billing_month")
         due_date = request.POST.get("due_date")
 
-        previous_reading = Decimal(request.POST.get("previous_reading"))
-        current_reading = Decimal(request.POST.get("current_reading"))
+        previous_reading = Decimal(request.POST.get("previous_reading") or "0.00" ) 
+        current_reading = Decimal(request.POST.get("current_reading") or "0.00")
+
+        connection_fee = Decimal(request.POST.get("connection_fee") or "0.00")
+        reconnection_fee = Decimal(request.POST.get("reconnection_fee") or "0.00")
+        violation_fee = Decimal(request.POST.get("violation_fee") or "0.00")
 
         # Prevent duplicate bill
         if Billing.objects.filter(
@@ -213,6 +404,7 @@ def create_bill(request):
             )
             return redirect("create_bill")
 
+        # Create bill
         Billing.objects.create(
             customer=customer,
             billing_month=billing_month,
@@ -220,17 +412,23 @@ def create_bill(request):
             current_reading=current_reading,
             due_date=due_date,
             rate_per_cubic=Decimal(request.POST.get("rate_per_cubic")),
+
+            connection_fee=connection_fee,
+            reconnection_fee=reconnection_fee,
+            violation_fee=violation_fee,
+
             status="unpaid",
         )
 
-        messages.success(request, "Water bill created successfully.")
+        # Change status after first billing
+        if customer.status == "new":
+            customer.status = "old"
+            customer.save(update_fields=["status"])
 
+        messages.success(request, "Water bill created successfully.")
         return redirect("create_bill")
 
-    customers = Customer.objects.filter(
-        status="active",
-        is_active=True
-    ).order_by("fullname")
+    customers = Customer.objects.all()
 
     customer_data = []
 
@@ -244,7 +442,8 @@ def create_bill(request):
 
         customer_data.append({
             "customer": customer,
-            "previous": previous
+            "previous": previous,
+            "is_new": customer.status == "new",
         })
 
     return render(request, "admin/create_bill.html", {
@@ -253,9 +452,31 @@ def create_bill(request):
 
 @login_required
 def payment(request):
-    billings = Billing.objects.select_related("customer").filter(
+
+    today = timezone.localdate()
+
+    billings = Billing.objects.select_related(
+        "customer"
+    ).filter(
         status="unpaid"
-    ).order_by("customer__fullname", "-billing_month")
+    ).order_by(
+        "customer__fullname",
+        "-billing_month"
+    )
+
+    for bill in billings:
+
+        # Check if overdue and penalty not yet applied
+        if bill.due_date < today and (bill.penalty_fee or Decimal("0.00")) == Decimal("0.00"):
+
+            # 10% penalty based on the rate_per_cubic
+            bill.penalty_fee = bill.rate_per_cubic * Decimal("0.10")
+
+            # penalty for total_amount
+            # bill.penalty_fee = bill.total_amount * Decimal("0.10")
+
+            # Save the bill (save() will automatically recalculate total_amount)
+            bill.save()
 
     return render(request, "admin/payments.html", {
         "billings": billings

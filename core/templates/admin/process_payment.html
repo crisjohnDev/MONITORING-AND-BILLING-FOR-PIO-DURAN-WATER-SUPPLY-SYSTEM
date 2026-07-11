@@ -8,7 +8,6 @@
     
     <div class="admin-profile">
         <div class="admin-info">
-            
             <small>System Administrator</small>
         </div>
         <div class="admin-avatar">AD</div>
@@ -16,86 +15,157 @@
 </header>
 
 <div class="workspace">
-    <div class="data-section" style="max-width: 700px; margin: 0 auto;">
-        <div class="section-header">
-            <h3>Invoice Settlement & Cash Counter Ledger</h3>
+    <div class="form-container-card">
+        <div class="form-card-header">
+            <div class="header-left">
+                <div class="icon-badge"><i class="fa-solid fa-cash-register"></i></div>
+                <div>
+                    <h3>Invoice Settlement & Cash Counter Ledger</h3>
+                    <p class="subtitle">Process customer cash payments and register official collection returns.</p>
+                </div>
+            </div>
+            <a href="{% url 'payments' %}" class="btn-back">
+                <i class="fa-solid fa-arrow-left-long"></i> Back to Payments
+            </a>
         </div>
 
-        <form method="POST" style="padding: 20px 0;">
+        <form method="POST">
             {% csrf_token %}
+
+            <div class="form-divider"><span>Consumer Context</span></div>
 
             <div class="form-row-dual">
                 <div class="form-group">
-                    <label>Account Number</label>
-                    <input type="text" readonly class="readonly-field font-mono" value="{{ bill.customer.account_number }}">
+                    <label>Submitter No.</label>
+                    <div class="input-with-icon locked">
+                        <i class="fa-solid fa-hashtag input-icon"></i>
+                        <input type="text" readonly class="font-mono" value="{{ bill.customer.submitter_no }}">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Customer Name</label>
-                    <input type="text" readonly class="readonly-field font-semibold" value="{{ bill.customer.fullname }}">
+                    <div class="input-with-icon locked">
+                        <i class="fa-solid fa-user input-icon"></i>
+                        <input type="text" readonly class="font-semibold" value="{{ bill.customer.fullname }}">
+                    </div>
                 </div>
             </div>
 
             <div class="form-row-dual">
                 <div class="form-group">
                     <label>Billing Month</label>
-                    <input type="text" readonly class="readonly-field" value="{{ bill.billing_month|date:'F Y' }}">
+                    <div class="input-with-icon locked">
+                        <i class="fa-solid fa-calendar-days input-icon"></i>
+                        <input type="text" readonly value="{{ bill.billing_month|date:'F Y' }}">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Due Date</label>
-                    <input type="text" readonly class="readonly-field font-semibold" style="color: #b45309;" value="{{ bill.due_date|date:'F d, Y' }}">
+                    <div class="input-with-icon locked alert-date">
+                        <i class="fa-solid fa-clock input-icon"></i>
+                        <input type="text" readonly class="font-semibold" value="{{ bill.due_date|date:'F d, Y' }}">
+                    </div>
                 </div>
             </div>
 
-            <hr class="section-divider">
+            <div class="form-divider"><span>Consumption Telemetry Matrix</span></div>
 
             <div class="form-row-triple">
                 <div class="form-group">
                     <label>Previous Reading</label>
-                    <input type="text" readonly class="readonly-field font-mono text-right" value="{{ bill.previous_reading }} m³">
+                    <div class="input-with-icon locked text-right-wrapper">
+                        <i class="fa-solid fa-gauge-simple input-icon"></i>
+                        <input type="text" readonly class="font-mono text-right" value="{{ bill.previous_reading }} m³">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Current Reading</label>
-                    <input type="text" readonly class="readonly-field font-mono text-right" value="{{ bill.current_reading }} m³">
+                    <div class="input-with-icon locked text-right-wrapper">
+                        <i class="fa-solid fa-gauge-high input-icon"></i>
+                        <input type="text" readonly class="font-mono text-right" value="{{ bill.current_reading }} m³">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Consumption</label>
-                    <input type="text" readonly class="readonly-field font-mono text-right font-semibold" value="{{ bill.consumption }} m³">
+                    <div class="input-with-icon locked text-right-wrapper focus-highlight">
+                        <i class="fa-solid fa-droplet input-icon"></i>
+                        <input type="text" readonly class="font-mono text-right font-semibold" value="{{ bill.consumption }} m³">
+                    </div>
                 </div>
             </div>
 
-            <hr class="section-divider">
+            <div class="form-divider"><span>Surcharges & Administrative Fees</span></div>
+
+            <div class="form-row-triple">
+                <div class="form-group">
+                    <label>Connection Fee</label>
+                    <div class="input-with-icon locked text-right-wrapper">
+                        <i class="fa-solid fa-plug input-icon"></i>
+                        <input type="text" readonly class="font-mono text-right" value="₱{{ bill.connection_fee|default:'0.00' }}">
+                        <input type="hidden" id="connection_fee" value="{{ bill.connection_fee|default:'0.00' }}">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Reconnection Fee</label>
+                    <div class="input-with-icon locked text-right-wrapper">
+                        <i class="fa-solid fa-bolt input-icon"></i>
+                        <input type="text" readonly class="font-mono text-right" value="₱{{ bill.reconnection_fee|default:'0.00' }}">
+                        <input type="hidden" id="reconnection_fee" value="{{ bill.reconnection_fee|default:'0.00' }}">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Violation Fee</label>
+                    <div class="input-with-icon locked text-right-wrapper">
+                        <i class="fa-solid fa-triangle-exclamation input-icon"></i>
+                        <input type="text" readonly class="font-mono text-right" value="₱{{ bill.violation_fee|default:'0.00' }}">
+                        <input type="hidden" id="violation_fee" value="{{ bill.violation_fee|default:'0.00' }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-divider"><span>Cash Registry Counter Terminal</span></div>
 
             <div class="live-calculation-grid">
                 <div class="calc-card total-highlight">
-                    <span class="calc-label">Total Amount Due</span>
-                    <div class="calc-value">₱<span id="display_amount_due">{{ bill.total_amount }}</span></div>
-                    <input type="hidden" id="amount_due" value="{{ bill.total_amount }}">
+                    <div class="calc-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                    <div class="calc-info">
+                        <span class="calc-label">Total Amount Due</span>
+                        <div class="calc-value">₱<span id="display_amount_due">{{ bill.total_amount }}</span></div>
+                    </div>
+                    <input type="hidden" id="base_bill_amount" value="{{ bill.total_amount }}">
+                    <input type="hidden" id="amount_due" value="0.00">
                 </div>
                 
                 <div class="calc-card cash-input-card">
-                    <span class="calc-label" style="color: var(--bg-navy);">Cash Received ₱ <span class="required">*</span></span>
-                    <input 
-                        id="amount_paid" 
-                        name="amount_paid" 
-                        type="number" 
-                        step="0.01" 
-                        required 
-                        placeholder="0.00"
-                        oninput="calculateChange()"
-                        class="cash-input font-mono"
-                    >
+                    <div class="calc-icon"><i class="fa-solid fa-money-bill-wave"></i></div>
+                    <div class="calc-info wide-input">
+                        <span class="calc-label">Cash Received <span class="required">*</span></span>
+                        <input 
+                            id="amount_paid" 
+                            name="amount_paid" 
+                            type="number" 
+                            step="0.01" 
+                            required 
+                            placeholder="0.00"
+                            oninput="calculateChange()"
+                            class="cash-input font-mono"
+                        >
+                    </div>
                 </div>
 
-                <div class="calc-card change-highlight">
-                    <span class="calc-label">Calculated Change</span>
-                    <div class="calc-value">₱<span id="change_display">0.00</span></div>
+                {% comment %} <div class="calc-card change-highlight">
+                    <div class="calc-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                    <div class="calc-info">
+                        <span class="calc-label">Calculated Change</span>
+                        <div class="calc-value">₱<span id="change_display">0.00</span></div>
+                    </div>
                     <input type="hidden" id="change" value="0.00">
-                </div>
+                </div> {% endcomment %}
             </div>
 
-            <div class="form-group">
+            <div class="form-group full-width">
                 <label for="remarks">Transaction Remarks / Internal Auditor Notes</label>
-                <textarea name="remarks" id="remarks" rows="3" placeholder="Add payment reference notes, check codes or receipt updates..."></textarea>
+                <textarea name="remarks" id="remarks" rows="3" placeholder="Add payment reference notes, check codes, split-payment details, or ledger validation keys..."></textarea>
             </div>
 
             <div class="form-actions-footer">
@@ -109,15 +179,119 @@
 </div>
 
 <style>
-    .form-group {
-        margin-bottom: 18px;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
+    /* Main Layout Framework Cards Container */
+    .form-container-card {
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--border-classic);
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 30px;
     }
 
+    .form-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border-classic);
+        padding-bottom: 20px;
+        margin-bottom: 15px;
+    }
+
+    .form-card-header .header-left {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .form-card-header .icon-badge {
+        width: 44px;
+        height: 44px;
+        background-color: rgba(15, 29, 58, 0.05);
+        color: var(--bg-navy);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+
+    .form-card-header h3 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--bg-navy);
+    }
+
+    .form-card-header .subtitle {
+        font-size: 13px;
+        color: var(--secondary-text);
+        margin-top: 2px;
+    }
+
+    .btn-back {
+        font-size: 13px;
+        text-decoration: none;
+        color: var(--secondary-text);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+
+    .btn-back:hover {
+        color: var(--bg-navy);
+        background-color: #f1f5f9;
+    }
+
+    /* Layout Positioning Grids */
+    .form-group {
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-row-dual {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .form-row-triple {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+    }
+
+    .form-divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 25px 0 20px 0;
+    }
+
+    .form-divider::before, .form-divider::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .form-divider span {
+        padding: 0 15px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #94a3b8;
+    }
+
+    /* Input Field Normalization */
     .form-group label {
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 700;
         color: #475569;
         text-transform: uppercase;
@@ -125,80 +299,126 @@
     }
 
     .required {
-        color: #dc2626;
+        color: #ef4444;
     }
 
-    /* Input Field Normalization */
-    .readonly-field,
+    .input-with-icon {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 14px;
+        color: #94a3b8;
+        font-size: 14px;
+        pointer-events: none;
+        z-index: 2;
+    }
+
+    .input-with-icon input,
     .form-group textarea {
-        height: 38px;
-        padding: 8px 12px;
-        font-size: 13px;
-        border: 1px solid var(--border-classic);
-        border-radius: 3px;
+        width: 100%;
+        height: 42px;
+        padding: 8px 12px 8px 40px;
+        font-size: 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
         color: var(--primary-text);
         background-color: #ffffff;
         box-sizing: border-box;
-    }
-
-    .readonly-field {
-        background-color: #f8fafc;
-        color: #334155;
+        transition: all 0.2s;
     }
 
     .form-group textarea {
         height: auto;
         resize: vertical;
         font-family: inherit;
+        padding: 12px;
     }
 
     .form-group textarea:focus {
         outline: none;
         border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
     }
 
-    /* Layout Positioning Grids */
-    .form-row-dual {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
+    /* Readonly Field Variant Modifications */
+    .input-with-icon.locked input {
+        background-color: #f8fafc;
+        border-color: #e2e8f0;
+        color: #334155;
+        cursor: not-allowed;
     }
 
-    .form-row-triple {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
+    .input-with-icon.locked.alert-date input {
+        color: #b45309;
+        font-weight: 600;
+        background-color: #fffbeb;
+        border-color: #fde68a;
+    }
+    .input-with-icon.locked.alert-date .input-icon {
+        color: #d97706;
     }
 
-    .section-divider {
-        border: none;
-        border-top: 1px dashed var(--border-classic);
-        margin: 20px 0;
+    .input-with-icon.locked.focus-highlight input {
+        background-color: rgba(15, 29, 58, 0.03);
+        color: var(--bg-navy);
+    }
+    .input-with-icon.locked.focus-highlight .input-icon {
+        color: var(--bg-navy);
+    }
+
+    .text-right-wrapper input {
+        padding-right: 14px;
     }
 
     .font-mono { font-family: monospace; font-size: 14px; }
-    .font-semibold { font-weight: 600; color: var(--bg-navy); }
+    .font-semibold { font-weight: 600; }
     .text-right { text-align: right; }
 
-    /* Interactive Accounting Matrix Card Layouts */
+    /* Interactive Accounting Matrix Terminal Grid Layouts */
     .live-calculation-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 14px;
-        margin: 24px 0;
+        gap: 16px;
+        margin: 25px 0;
     }
 
     .calc-card {
         background-color: #f8fafc;
-        border: 1px solid var(--border-classic);
-        border-radius: 4px;
-        padding: 16px 12px;
-        text-align: center;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: all 0.2s;
+    }
+
+    .calc-card .calc-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+
+    .calc-info {
         display: flex;
         flex-direction: column;
         justify-content: center;
-        align-items: center;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    
+    .calc-info.wide-input {
+        width: 100%;
     }
 
     .calc-card .calc-label {
@@ -206,80 +426,103 @@
         text-transform: uppercase;
         font-weight: 700;
         color: #64748b;
-        margin-bottom: 8px;
-        display: block;
+        letter-spacing: 0.5px;
     }
 
     .calc-card .calc-value {
         font-size: 20px;
         font-weight: 700;
         font-family: monospace;
+        margin-top: 2px;
     }
 
-    /* Total Balance Red Highlight Styles */
+    /* Red Pay Container Flag Box */
     .calc-card.total-highlight {
-        background-color: #fef2f2;
-        border-color: #fee2e2;
+        background-color: #fff1f2;
+        border-color: #fecdd3;
     }
-    .calc-card.total-highlight .calc-label { color: #991b1b; }
-    .calc-card.total-highlight .calc-value { color: #dc2626; }
+    .calc-card.total-highlight .calc-icon {
+        background: #ffe4e6;
+        color: #e11d48;
+        border-color: #fda4af;
+    }
+    .calc-card.total-highlight .calc-label { color: #9f1239; }
+    .calc-card.total-highlight .calc-value { color: #e11d48; }
 
-    /* Active Input Field Card Styles */
+    /* Centered Active Term Cash Input Card Styles */
     .calc-card.cash-input-card {
         background-color: #ffffff;
-        border-color: #cbd5e1;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+        border-color: var(--accent-blue);
+        box-shadow: 0 4px 12px rgba(29, 78, 216, 0.06);
+    }
+    .calc-card.cash-input-card .calc-icon {
+        background: rgba(29, 78, 216, 0.05);
+        color: var(--accent-blue);
+        border-color: rgba(29, 78, 216, 0.15);
+    }
+    .calc-card.cash-input-card .calc-label {
+        color: var(--bg-navy);
+        margin-bottom: 4px;
     }
     
     .cash-input {
         width: 100%;
-        height: 38px;
-        text-align: center;
+        height: 34px;
         font-size: 18px;
         font-weight: 700;
-        border: 1px solid var(--accent-blue);
-        border-radius: 3px;
+        border: none;
+        border-bottom: 2px solid #cbd5e1;
         color: var(--bg-navy);
-        background-color: #fff;
+        background-color: transparent;
+        padding: 0;
+        transition: border-color 0.2s;
     }
     
     .cash-input:focus {
         outline: none;
-        box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
+        border-color: var(--accent-blue);
     }
 
-    /* Cash Return Green Highlight Styles */
+    /* Green Cash Return Balance Highlight Box */
     .calc-card.change-highlight {
         background-color: #f0fdf4;
         border-color: #bbf7d0;
     }
+    .calc-card.change-highlight .calc-icon {
+        background: #dcfce7;
+        color: #16a34a;
+        border-color: #86efac;
+    }
     .calc-card.change-highlight .calc-label { color: #166534; }
     .calc-card.change-highlight .calc-value { color: #15803d; font-size: 22px; }
 
-    /* Footer Action Control Options Buttons */
+    /* Footer Action Button Trays */
     .form-actions-footer {
         display: flex;
         justify-content: flex-end;
         gap: 12px;
+        border-top: 1px solid var(--border-classic);
+        padding-top: 20px;
         margin-top: 15px;
-        padding-top: 15px;
     }
 
     .btn-secondary {
         background-color: #ffffff;
-        border: 1px solid var(--border-classic);
-        color: #475569;
-        padding: 10px 22px;
+        border: 1px solid #cbd5e1;
+        color: #334155;
+        padding: 11px 22px;
         font-size: 13px;
         font-weight: 600;
-        border-radius: 3px;
+        border-radius: 6px;
         text-decoration: none;
         display: inline-flex;
         align-items: center;
+        transition: all 0.2s;
     }
 
     .btn-secondary:hover {
-        background-color: #f1f5f9;
+        background-color: #f8fafc;
+        border-color: #94a3b8;
         color: var(--bg-navy);
     }
 
@@ -287,33 +530,59 @@
         background-color: var(--bg-navy);
         border: 1px solid rgba(0, 0, 0, 0.1);
         color: #ffffff;
-        padding: 10px 26px;
+        padding: 11px 26px;
         font-size: 13px;
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.3px;
-        border-radius: 3px;
+        letter-spacing: 0.5px;
+        border-radius: 6px;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        transition: background-color 0.2s ease;
+        transition: all 0.2s;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
 
     .btn-submit:hover {
         background-color: #1e3a6d;
+        transform: translateY(-1px);
+    }
+    
+    .btn-submit:active {
+        transform: translateY(0);
     }
 
     @media (max-width: 640px) {
         .form-row-dual, .form-row-triple, .live-calculation-grid {
             grid-template-columns: 1fr;
         }
+        .calc-card {
+            width: 100%;
+            box-sizing: border-box;
+        }
     }
 </style>
 
 <script>
+    {% comment %} function calculateGrandTotal() {
+        const baseBill = parseFloat(document.getElementById("base_bill_amount").value) || 0;
+        const connection = parseFloat(document.getElementById("connection_fee").value) || 0;
+        const reconnection = parseFloat(document.getElementById("reconnection_fee").value) || 0;
+        const violation = parseFloat(document.getElementById("violation_fee").value) || 0;
+
+        // Sum everything up to get the true current due
+        const totalDue = baseBill + connection + reconnection + violation;
+
+        document.getElementById("amount_due").value = totalDue.toFixed(2);
+        document.getElementById("display_amount_due").innerText = totalDue.toFixed(2);
+        
+        return totalDue;
+    }
+
     function calculateChange() {
-        const due = parseFloat(document.getElementById("amount_due").value) || 0;
+        // Run grand total compilation to base math calculations on accurate sums
+        const due = calculateGrandTotal();
         const paid = parseFloat(document.getElementById("amount_paid").value) || 0;
 
         let change = paid - due;
@@ -322,9 +591,13 @@
             change = 0;
         }
 
-        // Apply string fixes directly to both text trackers and the hidden value form arrays
         document.getElementById("change").value = change.toFixed(2);
         document.getElementById("change_display").innerText = change.toFixed(2);
-    }
+    } {% endcomment %}
+
+    // Initialize setup pipeline on window paint execution
+    window.addEventListener('DOMContentLoaded', () => {
+        calculateGrandTotal();
+    });
 </script>
 {% endblock %}

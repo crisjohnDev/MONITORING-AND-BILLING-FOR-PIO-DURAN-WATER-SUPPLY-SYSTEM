@@ -1,7 +1,7 @@
 {% extends 'admin.html' %}
 
 {% block content %}
-<!-- Top Management Navigation Sub-Bar -->
+<!-- Sub-Header Workspace Header -->
 <header class="top-navbar">
     <div class="page-title">
         <h1 id="current-view-title">Generate Utility Statement</h1>
@@ -9,7 +9,6 @@
     
     <div class="admin-profile">
         <div class="admin-info">
-        
             <small>System Administrator</small>
         </div>
         <div class="admin-avatar">AD</div>
@@ -18,83 +17,153 @@
 
 <!-- Main Workspace Body Area -->
 <div class="workspace">
-    <div class="data-section" style="max-width: 700px; margin: 0 auto;">
-        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
-            <h3>New Meter Reading & Invoice Entry</h3>
-            <a href="#" class="btn-back" style="font-size: 13px; text-decoration: none; color: var(--primary-text); font-weight: 600;">
+    <div class="form-container-card">
+        <div class="form-card-header">
+            <div class="header-left">
+                <div class="icon-badge"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                <div>
+                    <h3>New Meter Reading & Invoice Entry</h3>
+                    <p class="subtitle">Record current water telemetry data and generate customer billings.</p>
+                </div>
+            </div>
+            <a href="{% url 'billing' %}" class="btn-back">
                 <i class="fa-solid fa-arrow-left-long"></i> Back to Ledger
             </a>
         </div>
         
-        <!-- Statement Processing Core Form Mapping fields straight to your Django Model definitions -->
-        <form method="POST" action="" id="billingGenerationForm" style="padding: 20px 0;">
+        <!-- Core Invoice Generation Form -->
+        <form method="POST" action="" id="billingGenerationForm">
             {% csrf_token %}
             
             <!-- 1. Customer Context Entity Target Locator -->
-            <div class="form-group">
-                <label for="customer">Target Consumer Account <span class="required">*</span></label>
-                <div class="select-search-wrapper">
-                    <select name="customer" id="customer" required onchange="updatePreviousReading(this)">
-                        <option value="" data-prev="0.00">
-                            -- Choose Registered Account or Search Name --
-                        </option>
+            <div class="form-group full-width">
+                <label for="customerSearchInput">Target Consumer Account <span class="required">*</span></label>
+                <div class="custom-combobox-wrapper">
+                    <div class="search-input-container">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="customerSearchInput" placeholder="Type Submitter No. or Name to search registry..." oninput="filterConsumerRegistry()" autocomplete="off">
+                    </div>
 
-                        {% for item in customer_data %}
-                        <option
-                            value="{{ item.customer.id }}"
-                            data-prev="{{ item.previous }}">
+                    <!-- Modern Interactive Scroll List -->
+                    <div class="dropdown-scroll-pane">
+                        <select name="customer" id="customer" size="5" required onchange="updatePreviousReading(this)">
+                            <option value="" data-prev="0.00" selected>
+                                -- Select Matched Consumer Target from List Below --
+                            </option>
+                            {% for item in customer_data %}
+                            <option
+                                value="{{ item.customer.id }}"
+                                data-prev="{{ item.previous }}"
+                                {% if item.customer.status == "new" %}disabled{% endif %}
+                            >
+                                {{ item.customer.submitter_no }} — {{ item.customer.fullname }}
 
-                            {{ item.customer.account_number }}
-                            —
-                            {{ item.customer.fullname }}
-
-                        </option>
-                        {% endfor %}
-                    </select>
+                                {% if item.customer.status == "new" %}
+                                    (New Applicant)
+                                {% else %}
+                                    (Old Customer)
+                                {% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
-                <small class="field-help">Selecting a valid user profile automatically loads their last recorded database log reference.</small>
+                <small class="field-help"><i class="fa-solid fa-circle-info"></i> Isolates registry matches instantly as you type.</small>
             </div>
 
-            <!-- 2. Statement Period & Absolute Expiry Threshold Configuration -->
+            <!-- Separator Divider Line -->
+            <div class="form-divider"><span>Statement Scheduling</span></div>
+
+            <!-- 2. Statement Period & Due Threshold Configuration -->
             <div class="form-row-dual">
                 <div class="form-group">
                     <label for="billing_month">Billing Coverage Month <span class="required">*</span></label>
-                    <input type="date" name="billing_month" id="billing_month" required value="2026-07-01">
+                    <div class="input-with-icon">
+                        <i class="fa-solid fa-calendar-days input-icon"></i>
+                        <input type="date" name="billing_month" id="billing_month" required value="2026-07-01">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="due_date">Settlement Due Date <span class="required">*</span></label>
-                    <input type="date" name="due_date" id="due_date" required value="2026-07-15">
+                    <div class="input-with-icon">
+                        <i class="fa-solid fa-calendar-check input-icon"></i>
+                        <input type="date" name="due_date" id="due_date" required value="2026-07-15">
+                    </div>
                 </div>
             </div>
 
-            <hr style="border: none; border-top: 1px dashed var(--border-classic); margin: 20px 0;">
+            <!-- Separator Divider Line -->
+            <div class="form-divider"><span>Telemetry & Consumption Metering</span></div>
 
             <!-- 3. Hardware Reading Telemetry Input Points -->
             <div class="form-row-dual">
                 <div class="form-group">
-                    <label for="previous_reading">Previous Reading (m³) <span class="required">*</span></label>
-                    <input type="number" step="0.01" name="previous_reading" id="previous_reading" placeholder="0.00" required readonly style="background-color: #f8fafc; font-family: monospace;">
+                    <label for="previous_reading">Previous Reading (m³)</label>
+                    <div class="input-with-icon locked">
+                        <i class="fa-solid fa-lock input-icon"></i>
+                        <input type="number" step="0.01" name="previous_reading" id="previous_reading" placeholder="0.00" required readonly>
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label for="current_reading">Current Reading Entry (m³) <span class="required">*</span></label>
-                    <input type="number" step="0.01" name="current_reading" id="current_reading" placeholder="0.00" required oninput="calculateLiveBillSummary()" style="font-family: monospace; font-weight: 600;">
+                    <label for="current_reading">Current Reading Entry (m³) <span class="required"></span></label>
+                    <div class="input-with-icon">
+                        <i class="fa-solid fa-gauge-high input-icon"></i>
+                        <input type="number" step="0.01" name="current_reading" id="current_reading" placeholder="0.00" oninput="calculateLiveBillSummary()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Separator Divider Line -->
+            <div class="form-divider"><span>Additional Adjustments & Surcharges</span></div>
+
+            <!-- Optional Surcharge Inputs Row -->
+            <div class="form-row-triple">
+                <div class="form-group">
+                    <label for="connection_fee">Connection Fee <span class="optional-tag">(Optional)</span></label>
+                    <div class="input-with-icon text-addon-container">
+                        <span class="currency-prefix">₱</span>
+                        <input type="number" step="0.01" name="connection_fee" id="connection_fee" placeholder="0.00" class="text-right font-mono" oninput="calculateLiveBillSummary()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="reconnection_fee">Reconnection Fee <span class="optional-tag">(Optional)</span></label>
+                    <div class="input-with-icon text-addon-container">
+                        <span class="currency-prefix">₱</span>
+                        <input type="number" step="0.01" name="reconnection_fee" id="reconnection_fee" placeholder="0.00" class="text-right font-mono" oninput="calculateLiveBillSummary()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="violation_fee">Violation Fee <span class="optional-tag">(Optional)</span></label>
+                    <div class="input-with-icon text-addon-container">
+                        <span class="currency-prefix">₱</span>
+                        <input type="number" step="0.01" name="violation_fee" id="violation_fee" placeholder="0.00" class="text-right font-mono" oninput="calculateLiveBillSummary()">
+                    </div>
                 </div>
             </div>
 
             <!-- 4. Real-time Calculation Summary Matrix Cards -->
             <div class="live-calculation-grid">
                 <div class="calc-card">
-                    <span class="calc-label">Computed Consumption</span>
-                    <div class="calc-value"><span id="live_consumption">0.00</span> <small>m³</small></div>
+                    <div class="calc-icon"><i class="fa-solid fa-droplet"></i></div>
+                    <div class="calc-info">
+                        <span class="calc-label">Computed Consumption</span>
+                        <div class="calc-value"><span id="live_consumption">0.00</span> <small>m³</small></div>
+                    </div>
                 </div>
                 <div class="calc-card">
-                    <span class="calc-label">Base Variable Rate</span>
-                    <div class="calc-value">₱<span id="live_rate">25.00</span></div>
-                    <input type="hidden" name="rate_per_cubic" id="rate_per_cubic" value="25.00">
+                    <div class="calc-icon"><i class="fa-solid fa-tag"></i></div>
+                    <div class="calc-info">
+                        <span class="calc-label">Base Variable Rate</span>
+                        <div class="calc-value">₱<span id="live_rate">25.00</span></div>
+                        <input type="hidden" name="rate_per_cubic" id="rate_per_cubic" value="25.00">
+                    </div>
                 </div>
                 <div class="calc-card total-highlight">
-                    <span class="calc-label">Gross Amount Payable</span>
-                    <div class="calc-value">₱<span id="live_total">0.00</span></div>
+                    <div class="calc-icon"><i class="fa-solid fa-wallet"></i></div>
+                    <div class="calc-info">
+                        <span class="calc-label">Gross Amount Payable</span>
+                        <div class="calc-value">₱<span id="live_total">0.00</span></div>
+                    </div>
                 </div>
             </div>
 
@@ -112,80 +181,310 @@
     </div>
 </div>
 
-<!-- Form Formatting Framework & Interface Styles -->
+<!-- Refined UI Design Styles System -->
 <style>
-    .form-group {
-        margin-bottom: 18px;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
+    /* Main Layout Cards Layout */
+    .form-container-card {
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--border-classic);
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 30px;
     }
 
-    .form-group label {
-        font-size: 13px;
+    .form-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border-classic);
+        padding-bottom: 20px;
+        margin-bottom: 25px;
+    }
+
+    .form-card-header .header-left {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .form-card-header .icon-badge {
+        width: 44px;
+        height: 44px;
+        background-color: rgba(15, 29, 58, 0.05);
+        color: var(--bg-navy);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+
+    .form-card-header h3 {
+        font-size: 18px;
         font-weight: 700;
         color: var(--bg-navy);
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
     }
 
-    .required {
-        color: #dc2626;
-    }
-
-    .form-group select,
-    .form-group input[type="date"],
-    .form-group input[type="number"] {
-        height: 38px;
-        padding: 8px 12px;
+    .form-card-header .subtitle {
         font-size: 13px;
-        border: 1px solid var(--border-classic);
-        border-radius: 3px;
-        color: var(--primary-text);
-        background-color: #ffffff;
-        box-sizing: border-box;
+        color: var(--secondary-text);
+        margin-top: 2px;
     }
 
-    .form-group select:focus,
-    .form-group input:focus {
-        outline: none;
-        border-color: var(--accent-blue);
+    .btn-back {
+        font-size: 13px;
+        text-decoration: none;
+        color: var(--secondary-text);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 4px;
+        transition: all 0.2s;
     }
 
-    .field-help {
-        font-size: 11px;
-        color: #64748b;
+    .btn-back:hover {
+        color: var(--bg-navy);
+        background-color: #f1f5f9;
+    }
+
+    /* Section Forms Layout Grids */
+    .form-group {
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
     }
 
     .form-row-dual {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 16px;
+        gap: 20px;
     }
 
-    /* Automatic Pricing Evaluation Interface Cards Blocks */
+    .form-row-triple {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+    }
+
+    .form-divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 30px 0 20px 0;
+    }
+
+    .form-divider::before, .form-divider::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .form-divider span {
+        padding: 0 15px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #94a3b8;
+    }
+
+    /* Input Fields Customizations */
+    .form-group label {
+        font-size: 12px;
+        font-weight: 700;
+        color: #334155;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .required {
+        color: #ef4444;
+    }
+
+    .optional-tag {
+        color: #94a3b8;
+        font-size: 11px;
+        text-transform: lowercase;
+        font-weight: 500;
+    }
+
+    .input-with-icon {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .input-icon, .currency-prefix {
+        position: absolute;
+        left: 14px;
+        color: #94a3b8;
+        font-size: 14px;
+        pointer-events: none;
+    }
+
+    .currency-prefix {
+        font-family: monospace;
+        font-weight: 700;
+        color: #64748b;
+    }
+
+    .input-with-icon input {
+        width: 100%;
+        height: 42px;
+        padding: 8px 12px 8px 40px;
+        font-size: 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        color: var(--primary-text);
+        background-color: #ffffff;
+        box-sizing: border-box;
+        transition: all 0.2s;
+    }
+
+    .input-with-icon input:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
+    }
+
+    /* Locked Readonly Fields state */
+    .input-with-icon.locked input {
+        background-color: #f8fafc;
+        border-color: #e2e8f0;
+        color: #64748b;
+        cursor: not-allowed;
+    }
+
+    .field-help {
+        font-size: 12px;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .font-mono { font-family: monospace; }
+    .text-right { text-align: right; }
+
+    /* Advanced Combobox Dropdown Interface */
+    .custom-combobox-wrapper {
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #ffffff;
+        overflow: hidden;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+
+    .search-input-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 14px;
+        color: #64748b;
+        font-size: 14px;
+    }
+
+    #customerSearchInput {
+        width: 100%;
+        height: 44px;
+        border: none;
+        background: transparent;
+        padding: 8px 12px 8px 42px;
+        font-size: 14px;
+        color: var(--primary-text);
+    }
+
+    #customerSearchInput:focus {
+        outline: none;
+    }
+
+    .dropdown-scroll-pane {
+        padding: 6px;
+        background: #ffffff;
+    }
+
+    #customer {
+        border: none !important;
+        outline: none !important;
+        background: transparent;
+        font-size: 13px;
+        color: var(--primary-text);
+        width: 100% !important;
+        box-shadow: none !important;
+    }
+
+    #customer option {
+        padding: 10px 12px;
+        border-radius: 4px;
+        margin-bottom: 2px;
+        cursor: pointer;
+        color: #334155;
+    }
+
+    #customer option:hover {
+        background-color: #f1f5f9 !important;
+    }
+
+    #customer option:checked {
+        background: #0f1d3a !important;
+        color: #ffffff !important;
+    }
+
+    /* Modern Pricing Metrics Calculation Dashboard Deck */
     .live-calculation-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-        margin: 24px 0;
+        gap: 16px;
+        margin: 30px 0;
     }
 
     .calc-card {
-        background-color: #f1f5f9;
-        border: 1px solid var(--border-classic);
-        border-radius: 3px;
-        padding: 14px;
-        text-align: center;
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: all 0.2s;
+    }
+
+    .calc-card .calc-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+
+    .calc-info {
+        display: flex;
+        flex-direction: column;
     }
 
     .calc-card .calc-label {
         font-size: 11px;
         text-transform: uppercase;
-        font-weight: 600;
+        font-weight: 700;
         color: #64748b;
-        display: block;
-        margin-bottom: 6px;
+        letter-spacing: 0.5px;
     }
 
     .calc-card .calc-value {
@@ -193,107 +492,182 @@
         font-weight: 700;
         color: var(--bg-navy);
         font-family: monospace;
+        margin-top: 2px;
     }
 
     .calc-card .calc-value small {
         font-size: 12px;
         color: #64748b;
+        font-weight: 400;
     }
 
-    /* Core Action Color Callout Mapping rules */
+    /* Target Payment Card Outlines Alert Highlight */
     .calc-card.total-highlight {
-        background-color: #fef2f2;
-        border-color: #fee2e2;
+        background-color: #fff1f2;
+        border-color: #fecdd3;
+    }
+
+    .calc-card.total-highlight .calc-icon {
+        background: #ffe4e6;
+        color: #e11d48;
+        border-color: #fda4af;
     }
 
     .calc-card.total-highlight .calc-label {
-        color: #991b1b;
+        color: #9f1239;
     }
 
     .calc-card.total-highlight .calc-value {
-        color: #dc2626;
+        color: #e11d48;
         font-size: 22px;
     }
 
+    /* Command Actions Footer Tray */
     .form-actions-footer {
         display: flex;
         justify-content: flex-end;
-        gap: 10px;
+        gap: 12px;
+        border-top: 1px solid var(--border-classic);
+        padding-top: 20px;
         margin-top: 10px;
     }
 
     .btn-secondary {
         background-color: #ffffff;
-        border: 1px solid var(--border-classic);
-        color: #475569;
-        padding: 10px 20px;
+        border: 1px solid #cbd5e1;
+        color: #334155;
+        padding: 11px 22px;
         font-size: 13px;
         font-weight: 600;
-        border-radius: 3px;
+        border-radius: 6px;
         cursor: pointer;
+        transition: all 0.2s;
     }
 
     .btn-secondary:hover {
         background-color: #f8fafc;
-        color: var(--bg-navy);
+        border-color: #94a3b8;
     }
 
     .btn-submit {
         background-color: var(--bg-navy);
         border: 1px solid rgba(0, 0, 0, 0.1);
         color: #ffffff;
-        padding: 10px 24px;
+        padding: 11px 26px;
         font-size: 13px;
         font-weight: 600;
         text-transform: uppercase;
-        border-radius: 3px;
+        letter-spacing: 0.5px;
+        border-radius: 6px;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
         gap: 8px;
+        transition: all 0.2s;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
 
     .btn-submit:hover {
         background-color: #1e3a6d;
+        transform: translateY(-1px);
+    }
+    
+    .btn-submit:active {
+        transform: translateY(0);
+    }
+
+    @media (max-width: 768px) {
+        .form-row-triple {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
-<!-- Live Telemetry Matrix Math Evaluation Module Script -->
+<!-- Live Telemetry Engine & Dynamic Data Stream Isolation Pipeline -->
 <script>
-    // Fired when the consumer identity locator input alters matching index
-function updatePreviousReading(selectElement) {
+    let masterRegistryOptions = [];
 
-    const option = selectElement.options[selectElement.selectedIndex];
+    document.addEventListener("DOMContentLoaded", () => {
+        const selectElement = document.getElementById("customer");
+        const nativeOptions = selectElement.getElementsByTagName("option");
+        
+        for (let i = 0; i < nativeOptions.length; i++) {
+            masterRegistryOptions.push({
+                value: nativeOptions[i].value,
+                text: nativeOptions[i].text,
+                prev: nativeOptions[i].getAttribute("data-prev") || "0.00"
+            });
+        }
+    });
 
-    document.getElementById("previous_reading").value =
-        parseFloat(option.dataset.prev || 0).toFixed(2);
+    function filterConsumerRegistry() {
+        const input = document.getElementById("customerSearchInput");
+        const filter = input.value.toUpperCase();
+        const select = document.getElementById("customer");
+        
+        select.innerHTML = "";
 
-    document.getElementById("current_reading").value = "";
+        masterRegistryOptions.forEach(opt => {
+            if (opt.value === "") {
+                if (filter === "") {
+                    appendDataOption(select, opt);
+                }
+                return;
+            }
 
-    calculateLiveBillSummary();
-}
+            if (opt.text.toUpperCase().indexOf(filter) > -1) {
+                appendDataOption(select, opt);
+            }
+        });
+    }
 
-    // Interactive computation engine mimicking model `.save()` override functions
+    function appendDataOption(parent, data) {
+        const optEl = document.createElement("option");
+        optEl.value = data.value;
+        optEl.text = data.text;
+        optEl.setAttribute("data-prev", data.prev);
+        parent.appendChild(optEl);
+    }
+
+    function updatePreviousReading(selectElement) {
+        const option = selectElement.options[selectElement.selectedIndex];
+        if (!option || option.value === "") return;
+
+        document.getElementById("previous_reading").value =
+            parseFloat(option.dataset.prev || 0).toFixed(2);
+
+        document.getElementById("current_reading").value = "";
+        calculateLiveBillSummary();
+    }
+
     function calculateLiveBillSummary() {
         const previousReading = parseFloat(document.getElementById('previous_reading').value) || 0;
         const currentReading = parseFloat(document.getElementById('current_reading').value) || 0;
         const ratePerCubic = parseFloat(document.getElementById('rate_per_cubic').value) || 25.00;
 
-        // Visual validation flag to clear styling glitches if inputs cross negative baselines
+        // Custom Surcharge Fallbacks
+        const connectionFee = parseFloat(document.getElementById('connection_fee').value) || 0;
+        const reconnectionFee = parseFloat(document.getElementById('reconnection_fee').value) || 0;
+        const violationFee = parseFloat(document.getElementById('violation_fee').value) || 0;
+
         if (currentReading < previousReading) {
-            document.getElementById('current_reading').style.borderColor = '#dc2626';
+            document.getElementById('current_reading').style.borderColor = '#ef4444';
+            document.getElementById('current_reading').style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
             resetLiveCalculations();
             return;
         } else {
-            document.getElementById('current_reading').style.borderColor = 'var(--border-classic)';
+            document.getElementById('current_reading').style.borderColor = '#cbd5e1';
+            document.getElementById('current_reading').style.boxShadow = 'none';
         }
 
         const consumption = currentReading - previousReading;
-        const totalAmount = consumption * ratePerCubic;
+        const usageAmount = consumption * ratePerCubic;
+        
+        // Dynamic aggregate pricing math calculation
+        const totalAmount = usageAmount + connectionFee + reconnectionFee + violationFee;
 
-        // Inject calculations into display nodes
         document.getElementById('live_consumption').innerText = consumption.toFixed(2);
-        document.getElementById('live_total').innerText = totalAmount.toFixed(2);
+        document.getElementById('live_total').innerText = totalAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     }
 
     function resetLiveCalculations() {

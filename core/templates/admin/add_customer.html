@@ -1,0 +1,282 @@
+{% extends 'admin.html' %}
+
+{% block content %}
+<header class="top-navbar">
+    <div class="page-title">
+        <h1 id="current-view-title">Add New Consumer Record</h1>
+    </div>
+    
+    <div class="admin-profile">
+        <div class="admin-info">
+            <small>System Administrator</small>
+        </div>
+        <div class="admin-avatar">AD</div>
+    </div>
+</header>
+
+<div class="workspace">
+    
+    <div class="action-bar-back">
+        <a href="{% url 'customers' %}" class="btn-back">
+            <i class="fa-solid fa-arrow-left-long"></i> Return to Customer Registry
+        </a>
+    </div>
+
+    <div class="data-section form-container-max">
+        <div class="section-header">
+            <h3>Consumer Profile Credentials Setup</h3>
+        </div>
+        
+        <form method="POST" class="classic-form">
+            {% csrf_token %}
+            
+            <div class="form-grid">
+                <!-- Full Name Field -->
+                <div class="form-group full-width">
+                    <label for="fullname">Full Name</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-user input-icon"></i>
+                        <input type="text" id="fullname" name="fullname" placeholder="First Name Last Name" required>
+                    </div>
+                </div>
+
+                <!-- Address Field -->
+                <div class="form-group full-width">
+                    <label for="address">Address</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-map-location-dot input-icon"></i>
+                        <input type="text" id="address" name="address" placeholder="Purok, Barangay Pio Duran, Albay" required>
+                    </div>
+                </div>
+
+                <!-- Submitter No. Field -->
+                <div class="form-group half-width">
+                    <label for="submitter_no">Submitter No.</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-id-card input-icon"></i>
+                        <input type="text" id="submitter_no" name="submitter_no" placeholder="EVJ-000000000" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Divider for Account Info -->
+            <hr class="section-divider">
+
+            <div class="section-header">
+                <h3>System Access Credentials</h3>
+            </div>
+
+            <div class="form-grid">
+                <!-- Username Field -->
+                <div class="form-group half-width">
+                    <label for="username">Username</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-at input-icon"></i>
+                        <input type="text" id="username" name="username" placeholder="customer_login" required>
+                    </div>
+                </div>
+
+                <!-- Password Field -->
+                <div class="form-group half-width">
+                    <label for="password">Initial Password</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-lock input-icon"></i>
+                        <input type="password" id="password" name="password" placeholder="••••••••" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions-footer">
+                <a href="{% url 'customers' %}" class="btn-form reset-cancel">Cancel</a>
+                <button type="submit" class="btn-form save-commit">
+                    <i class="fa-solid fa-floppy-disk"></i> Add Customer 
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .action-bar-back {
+        display: flex;
+        justify-content: flex-start;
+        margin-bottom: -10px;
+    }
+
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--secondary-text);
+        text-decoration: none;
+        transition: color 0.15s ease;
+    }
+
+    .btn-back:hover {
+        color: var(--accent-blue);
+    }
+
+    .form-container-max {
+        max-width: 760px;
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .classic-form {
+        padding: 30px;
+        background-color: #ffffff;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-group.full-width {
+        grid-column: span 2;
+    }
+
+    .form-group.half-width {
+        grid-column: span 1;
+    }
+
+    .form-group label {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--bg-navy);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .input-wrapper {
+        position: relative;
+        width: 100%;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 14px;
+    }
+
+    .input-wrapper input[type="text"],
+    .input-wrapper input[type="email"],
+    .input-wrapper input[type="tel"],
+    .input-wrapper input[type="password"],
+    .input-wrapper select {
+        width: 100%;
+        height: 42px;
+        padding: 8px 12px 8px 42px;
+        font-size: 14px;
+        color: var(--primary-text);
+        background-color: #ffffff;
+        border: 1px solid var(--border-classic);
+        border-radius: 3px;
+        box-sizing: border-box;
+        transition: all 0.15s ease;
+    }
+
+    .input-wrapper input:focus,
+    .input-wrapper select:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.05);
+    }
+
+    /* Style rule overrides to handle select list structures elegantly */
+    .input-wrapper select {
+        appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+        background-size: 14px;
+        padding-right: 40px;
+        cursor: pointer;
+    }
+
+    .field-help {
+        font-size: 11px;
+        color: var(--secondary-text);
+        margin-top: -2px;
+    }
+
+    /* Divider styling for visual separation */
+    .section-divider {
+        border: 0;
+        border-top: 1px dashed var(--border-classic);
+        margin: 32px 0 24px 0;
+    }
+
+    .form-actions-footer {
+        margin-top: 36px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border-classic);
+        display: flex;
+        justify-content: flex-end;
+        gap: 16px;
+    }
+
+    .btn-form {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 40px;
+        padding: 0 24px;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border: none;
+    }
+
+    .btn-form.reset-cancel {
+        background-color: transparent;
+        border: 1px solid var(--border-classic);
+        color: var(--secondary-text);
+    }
+
+    .btn-form.reset-cancel:hover {
+        background-color: #f1f5f9;
+        color: var(--primary-text);
+    }
+
+    .btn-form.save-commit {
+        background-color: var(--accent-gold);
+        color: #ffffff;
+    }
+
+    .btn-form.save-commit:hover {
+        background-color: #9a4305;
+    }
+
+    /* Form Responsive Breakpoints */
+    @media (max-width: 640px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+            gap: 18px;
+        }
+        .form-group.full-width, .form-group.half-width {
+            grid-column: span 1;
+        }
+        .classic-form {
+            padding: 20px;
+        }
+    }
+</style>
+{% endblock %}

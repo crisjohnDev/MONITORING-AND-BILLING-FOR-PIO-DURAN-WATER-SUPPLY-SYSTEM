@@ -31,8 +31,8 @@
                     <td class="val">{{ payment.payment_date|date:"F d, Y h:i A" }}</td>
                 </tr>
                 <tr>
-                    <td class="lbl">Account No.</td>
-                    <td class="val font-mono font-semibold">{{ payment.billing.customer.account_number }}</td>
+                    <td class="lbl">Submitter No.</td>
+                    <td class="val font-mono font-semibold">{{ payment.billing.customer.submitter_no}}</td>
                     <td class="lbl">Billing Month</td>
                     <td class="val font-semibold">{{ payment.billing.billing_month|date:"F Y" }}</td>
                 </tr>
@@ -64,6 +64,18 @@
                         <td>Current Meter Index Reading</td>
                         <td class="font-mono text-right">{{ payment.billing.current_reading }} m³</td>
                     </tr>
+                    <tr>
+                        <td>Connection Fee</td>
+                        <td class="font-mono text-right">{{ payment.billing.connection_fee }} </td>
+                    </tr>       
+                    <tr>
+                        <td>Reconnection Fee</td>
+                        <td class="font-mono text-right">{{ payment.billing.reconnection_fee }} </td>
+                    </tr>  
+                    <tr>
+                        <td>Violation Fee</td>
+                        <td class="font-mono text-right">{{ payment.billing.violation_fee }} </td>
+                    </tr>              
                     <tr class="highlight-row">
                         <td class="font-semibold">Net Liquid Volume Consumption</td>
                         <td class="font-mono text-right font-bold color-navy">{{ payment.billing.consumption }} m³</td>

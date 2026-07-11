@@ -30,7 +30,9 @@ class Billing(models.Model):
 
     current_reading = models.DecimalField(
         max_digits=10,
-        decimal_places=2
+        decimal_places=2,
+        null=True,
+        blank=True
     )
 
     consumption = models.DecimalField(
@@ -43,6 +45,39 @@ class Billing(models.Model):
         max_digits=10,
         decimal_places=2,
         default=Decimal("25.00")
+    )
+
+    # Optional additional fees
+    connection_fee = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        blank=True,
+        null=True
+    )
+
+    reconnection_fee = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        blank=True,
+        null=True
+    )
+
+    violation_fee = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        blank=True,
+        null=True
+    )
+
+    penalty_fee = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        blank=True,
+        null=True
     )
 
     total_amount = models.DecimalField(
@@ -63,11 +98,24 @@ class Billing(models.Model):
 
     def save(self, *args, **kwargs):
         self.consumption = self.current_reading - self.previous_reading
-        self.total_amount = self.consumption * self.rate_per_cubic
+
+        connection = self.connection_fee or Decimal("0.00")
+        reconnection = self.reconnection_fee or Decimal("0.00")
+        violation = self.violation_fee or Decimal("0.00")
+        penalty = self.penalty_fee or Decimal("0.00")
+
+        self.total_amount = (
+            (self.consumption * self.rate_per_cubic)
+            + connection
+            + reconnection
+            + violation
+            + penalty
+        )
+
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.customer.account_number} - {self.billing_month}"
+        return f"{self.customer.submitter_no} - {self.billing_month}"
     
 class Payment(models.Model):
 

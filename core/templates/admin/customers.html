@@ -1,7 +1,6 @@
 {% extends 'admin.html' %}
 
 {% block content %}
-<!-- Top Management Navigation Sub-Bar -->
 <header class="top-navbar">
     <div class="page-title">
         <h1 id="current-view-title">Active Customers</h1>
@@ -9,25 +8,30 @@
     
     <div class="admin-profile">
         <div class="admin-info">
-            
             <small>System Administrator</small>
         </div>
         <div class="admin-avatar">AD</div>
     </div>
 </header>
 
-<!-- Main Workspace Body Area -->
 <div class="workspace">
 
-    <!-- Action Bar Section -->
     <div class="action-bar">
+        <div class="management-controls">
+            <a href="{% url 'add-customer' %}" class="btn-control primary">
+                <i class="fa-solid fa-user-plus"></i> Add Customer
+            </a>
+            <button type="button" class="btn-control secondary" id="openUploadBtn" onclick="toggleUploadModal(true)">
+                <i class="fa-solid fa-file-excel"></i> Upload Existing Consumers
+            </button>
+        </div>
+
         <div class="search-wrapper">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
             <input type="text" id="tableSearch" placeholder="Search customer registry records..." onkeyup="filterCustomerTable()">
         </div>
     </div>
 
-    <!-- Main Table Container -->
     <div class="data-section">
         <div class="section-header">
             <h3>Registered Consumer Information Registry</h3>
@@ -36,58 +40,25 @@
             <table class="classic-table" id="customerTable">
                 <thead>
                     <tr>
-                        <th>Account Number</th>
+                        <th>Submitter No.</th>
                         <th>Full Name</th>
-                        <th>Email Address</th>
-                        <th>Phone Number</th>
-                        <th>Service Address</th>
-                        <th>Status</th>
+                        <th>Address</th>
                         <th style="text-align: center;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for customer in customers %}
                     <tr>
-                        <td>{{ customer.account_number }}</td>
+                        <td>{{ customer.submitter_no }}</td>
                         <td class="font-semibold">{{ customer.fullname }}</td>
-                        <td>{{ customer.email }}</td>
-                        <td>{{ customer.phone }}</td>
                         <td>{{ customer.address }}</td>
 
                         <td>
-                            {% if customer.status == "active" %}
-                                <span class="badge status-active">Active</span>
-                            {% elif customer.status == "inactive" %}
-                                <span class="badge status-inactive">Inactive</span>
-                            {% elif customer.status == "decline" %}
-                                <span class="badge status-decline">Declined</span>
-                            {% else %}
-                                <span class="badge status-pending">Pending</span>
-                            {% endif %}
-                        </td>
-
-                        <td>
                             <div class="action-btn-group">
-
-                                {% if customer.status == "active" %}
-                                <form method="POST" action="{% url 'suspend_customer' customer.id %}" style="display:inline;">
-                                    {% csrf_token %}
-                                    <button type="submit"
-                                            class="btn-action suspend"
-                                            onclick="return confirm('Suspend this customer?')">
-                                        <i class="fa-solid fa-ban"></i> Suspend
-                                    </button>
-                                </form>
-                                {% else %}
-                                <form method="POST" action="{% url 'reactivate_customer' customer.id %}" style="display:inline;">
-                                    {% csrf_token %}
-                                    <button type="submit"
-                                            class="btn-action approve"
-                                            onclick="return confirm('Reactivate this customer?')">
-                                        <i class="fa-solid fa-check"></i> Reactivate
-                                    </button>
-                                </form>
-                                {% endif %}
+                                <!-- View Profile Interactive Control Action Trigger -->
+                                <a href="{% url 'customer_profile' customer.id %}" class="btn-action profile">
+                                    <i class="fa-solid fa-address-card"></i> View Profile
+                                </a>
 
                                 <form method="POST" action="{% url 'delete_customer' customer.id %}" style="display:inline;">
                                     {% csrf_token %}
@@ -97,13 +68,12 @@
                                         <i class="fa-solid fa-trash-can"></i> Delete
                                     </button>
                                 </form>
-
                             </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" style="text-align:center;">
+                        <td colspan="4" style="text-align:center;">
                             No active customers found.
                         </td>
                     </tr>
@@ -114,12 +84,86 @@
     </div>
 </div>
 
-<!-- Extra Inline Styles Specific to the Customers Subsystem Management -->
+<div id="uploadModal" class="modal-overlay" style="display: none;">
+    <div class="classic-modal">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-file-excel" style="color: #15803d; margin-right: 8px;"></i> Import Customers Matrix</h3>
+            <button type="button" class="close-modal-btn" id="closeModalCross" onclick="toggleUploadModal(false)">&times;</button>
+        </div>
+        <form method="POST" action="{% url 'import_customers' %}" enctype="multipart/form-data" id="excelUploadForm" onsubmit="handleFormSubmit(event)">
+            {% csrf_token %}
+            <div class="modal-body">
+                <p>Upload a spreadsheet format template file (`.xlsx`, `.xls`) populated with matching column structures.</p>
+                <div class="file-drop-area" id="dropZoneContainer">
+                    <input type="file" name="excel_file" id="excelFileInput" accept=".xlsx, .xls" required onchange="handleFileSelection(this)">
+                    <label for="excelFileInput" id="fileInputLabel">
+                        <i class="fa-solid fa-cloud-arrow-up" id="uploadIcon"></i>
+                        <span id="fileLabelText">Choose file or drag here</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-action cancel" id="cancelModalBtn" onclick="toggleUploadModal(false)">Cancel</button>
+                <button type="submit" class="btn-action confirm-upload" id="submitModalBtn">
+                    <i class="fa-solid fa-upload" id="submitIcon"></i> <span id="submitText">Process Parse</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <style>
     .action-bar {
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
+        align-items: center;
         margin-bottom: -6px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    /* Management Control Buttons Styling */
+    .management-controls {
+        display: flex;
+        gap: 12px;
+    }
+
+    .btn-control {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 36px;
+        padding: 0 16px;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .btn-control.primary {
+        background-color: var(--accent-gold);
+        color: #ffffff;
+        border: 1px solid var(--accent-gold);
+    }
+
+    .btn-control.primary:hover {
+        background-color: #9a4305;
+        border-color: #9a4305;
+    }
+
+    .btn-control.secondary {
+        background-color: #ffffff;
+        color: var(--bg-navy);
+        border: 1px solid var(--border-classic);
+    }
+
+    .btn-control.secondary:hover {
+        background-color: #f8fafc;
+        border-color: #cbd5e1;
     }
 
     /* Traditional Administrative Search Field Component */
@@ -160,19 +204,6 @@
         color: var(--bg-navy);
     }
 
-    /* Core Application Account Badges State Configurations */
-    .badge.status-active {
-        background-color: #f0fdf4;
-        border: 1px solid #bbf7d0;
-        color: #166534;
-    }
-
-    .badge.status-suspended {
-        background-color: #fff7ed;
-        border: 1px solid #fed7aa;
-        color: #9a3412;
-    }
-
     /* Action Trigger Group Interface Arrangements */
     .action-btn-group {
         display: flex;
@@ -186,39 +217,28 @@
         font-weight: 600;
         border-radius: 3px;
         cursor: pointer;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         gap: 6px;
         transition: all 0.15s ease;
         text-transform: uppercase;
         letter-spacing: 0.3px;
+        text-decoration: none;
+        box-sizing: border-box;
     }
 
-    /* Suspend Control Style mapping */
-    .btn-action.suspend {
+    /* View Profile Base Custom Style Modifications */
+    .btn-action.profile {
         background-color: #ffffff;
-        border: 1px solid #d97706;
-        color: #d97706;
+        border: 1px solid var(--accent-blue);
+        color: var(--accent-blue);
     }
 
-    .btn-action.suspend:hover {
-        background-color: #d97706;
+    .btn-action.profile:hover {
+        background-color: var(--accent-blue);
         color: #ffffff;
     }
 
-    /* Reactivate Control Style mapping */
-    .btn-action.activate {
-        background-color: #ffffff;
-        border: 1px solid var(--success-green);
-        color: var(--success-green);
-    }
-
-    .btn-action.activate:hover {
-        background-color: var(--success-green);
-        color: #ffffff;
-    }
-
-    /* Delete Control Style mapping */
     .btn-action.delete {
         background-color: #ffffff;
         border: 1px solid #dc2626;
@@ -229,30 +249,223 @@
         background-color: #dc2626;
         color: #ffffff;
     }
+
+    /* --- MODAL DIALOG EXTENSION INTERFACE --- */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(15, 29, 58, 0.4);
+        backdrop-filter: blur(2px);
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .classic-modal {
+        background-color: #ffffff;
+        width: 100%;
+        max-width: 480px;
+        border-radius: 4px;
+        border: 1px solid var(--border-classic);
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+        overflow: hidden;
+    }
+
+    .modal-header {
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--border-classic);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background-color: #f8fafc;
+    }
+
+    .modal-header h3 {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--bg-navy);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .close-modal-btn {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: var(--secondary-text);
+        cursor: pointer;
+    }
+
+    .modal-body {
+        padding: 24px;
+    }
+
+    .modal-body p {
+        font-size: 13px;
+        color: var(--secondary-text);
+        margin-bottom: 16px;
+        line-height: 1.5;
+    }
+
+    .file-drop-area {
+        border: 2px dashed var(--border-classic);
+        border-radius: 4px;
+        padding: 30px 20px;
+        text-align: center;
+        position: relative;
+        background-color: #f8fafc;
+        transition: all 0.15s ease;
+    }
+
+    .file-drop-area:hover {
+        border-color: var(--accent-blue);
+        background-color: #f1f5f9;
+    }
+
+    /* Success File Upload Context State */
+    .file-drop-area.file-staged {
+        border-color: #16a34a;
+        background-color: #f0fdf4;
+    }
+
+    .file-drop-area input[type="file"] {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .file-drop-area i {
+        font-size: 28px;
+        color: #94a3b8;
+        margin-bottom: 8px;
+        display: block;
+        transition: color 0.15s ease;
+    }
+
+    .file-drop-area.file-staged i {
+        color: #16a34a;
+    }
+
+    .file-drop-area span {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--primary-text);
+        word-break: break-all;
+    }
+
+    .modal-footer {
+        padding: 16px 24px;
+        border-top: 1px solid var(--border-classic);
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        background-color: #f8fafc;
+    }
+
+    .btn-action.cancel {
+        background: none;
+        border: 1px solid var(--border-classic);
+        color: var(--secondary-text);
+    }
+
+    .btn-action.cancel:hover {
+        background-color: #f1f5f9;
+    }
+
+    .btn-action.confirm-upload {
+        background-color: var(--bg-navy);
+        border: 1px solid var(--bg-navy);
+        color: #ffffff;
+    }
+
+    .btn-action.confirm-upload:hover {
+        background-color: var(--sidebar-bg);
+    }
+
+    /* Disabled UI state during active form process execution */
+    .btn-action:disabled, .close-modal-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed !important;
+        pointer-events: none;
+    }
 </style>
 
-<!-- Account Lifecycle State Management Operations script -->
 <script>
-    {% comment %} function handleCustomerAccount(operation, customerName) {
-        if (operation === 'suspend') {
-            if (confirm(`Are you certain you wish to temporarily restrict and suspend security access tokens for ${customerName}?`)) {
-                console.log(`Dispatched LifeCycle System Signal: SUSPEND -> target: ${customerName}`);
-                // Link your system data-handling fetch updates here
-            }
-        } else if (operation === 'reactivate') {
-            if (confirm(`Authorize full profile system clearance restoration for ${customerName}?`)) {
-                console.log(`Dispatched LifeCycle System Signal: REACTIVATE -> target: ${customerName}`);
-                // Link your system data-handling fetch updates here
-            }
-        } else if (operation === 'delete') {
-            if (confirm(`CRITICAL WARNING: You are executing a purge command. Completely remove all service logs and profiles linked to ${customerName}? This operation is irreversible.`)) {
-                console.log(`Dispatched LifeCycle System Signal: PURGE -> target: ${customerName}`);
-                // Link your system database drop triggers here
-            }
-        }
-    } {% endcomment %}
+    // Toggle Excel Document Import Interface Visibility
+    function toggleUploadModal(visible) {
+        const modal = document.getElementById('uploadModal');
+        modal.style.display = visible ? 'flex' : 'none';
+        
+        // Reset form data inputs and tracking states on close/open lifecycle
+        if (!visible) {
+            document.getElementById('excelUploadForm').reset();
+            const dropZone = document.getElementById('dropZoneContainer');
+            const labelText = document.getElementById('fileLabelText');
+            const icon = document.getElementById('uploadIcon');
+            
+            dropZone.classList.remove('file-staged');
+            labelText.innerText = "Choose file or drag here";
+            labelText.style.color = "";
+            icon.className = "fa-solid fa-cloud-arrow-up";
 
-    // Traditional lightweight matching engine to filter client view table array matrix rows
+            // Restore action button configurations if modal closed
+            document.getElementById('submitModalBtn').disabled = false;
+            document.getElementById('cancelModalBtn').disabled = false;
+            document.getElementById('closeModalCross').disabled = false;
+            document.getElementById('submitIcon').className = "fa-solid fa-upload";
+            document.getElementById('submitText').innerText = "Process Parse";
+        }
+    }
+
+    // Capture file choice change context mutation to inform UI
+    function handleFileSelection(input) {
+        const dropZone = document.getElementById('dropZoneContainer');
+        const labelText = document.getElementById('fileLabelText');
+        const icon = document.getElementById('uploadIcon');
+
+        if (input.files && input.files.length > 0) {
+            const fileName = input.files[0].name;
+            
+            // Transform layout state parameters to indicate staged documents
+            dropZone.classList.add('file-staged');
+            icon.className = "fa-solid fa-file-circle-check";
+            labelText.innerText = `Selected: ${fileName}`;
+            labelText.style.color = "#15803d";
+        }
+    }
+
+    // Handle form transmission and instantiate loading animations
+    function handleFormSubmit(event) {
+        const fileInput = document.getElementById('excelFileInput');
+        
+        // Ensure a file target context exists before updating elements
+        if (fileInput.files.length > 0) {
+            const submitBtn = document.getElementById('submitModalBtn');
+            const cancelBtn = document.getElementById('cancelModalBtn');
+            const closeCross = document.getElementById('closeModalCross');
+            const submitIcon = document.getElementById('submitIcon');
+            const submitText = document.getElementById('submitText');
+
+            // Turn on active processing UI properties
+            submitBtn.disabled = true;
+            cancelBtn.disabled = true;
+            closeCross.disabled = true;
+            
+            // Swap out regular icon for loading spinner sequence
+            submitIcon.className = "fa-solid fa-spinner fa-spin";
+            submitText.innerText = "Processing...";
+        }
+    }
+
+    // Filter consumer views records 
     function filterCustomerTable() {
         const input = document.getElementById('tableSearch');
         const filter = input.value.toLowerCase();
