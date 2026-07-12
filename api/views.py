@@ -46,7 +46,7 @@ class CustomerDashboardView(APIView):
         return Response({
             "customer": {
                 "fullname": customer.fullname,
-                "account_number": customer.account_number,
+                "submitter_no": customer.submitter_no,
             },
 
             "current_bills": [
@@ -98,9 +98,24 @@ class CustomerPaymentHistoryView(APIView):
                 "amount_paid": str(payment.amount_paid),
                 "payment_date": payment.payment_date,
                 "remarks": payment.remarks,
+
                 "billing": {
-                    "account_number": payment.billing.customer.account_number,
+                    "submitter_no": payment.billing.customer.submitter_no,
                     "billing_month": payment.billing.billing_month.strftime("%B %Y"),
+
+                    "previous_reading": str(payment.billing.previous_reading),
+                    "current_reading": str(payment.billing.current_reading),
+                    "consumption": str(payment.billing.consumption),
+                    "rate_per_cubic": str(payment.billing.rate_per_cubic),
+
+                    "connection_fee": str(payment.billing.connection_fee or 0),
+                    "reconnection_fee": str(payment.billing.reconnection_fee or 0),
+                    "violation_fee": str(payment.billing.violation_fee or 0),
+                    "penalty_fee": str(payment.billing.penalty_fee or 0),
+
+                    "total_amount": str(payment.billing.total_amount),
+                    "due_date": payment.billing.due_date.strftime("%B %d, %Y"),
+                    "status": payment.billing.status,
                 }
             })
 
@@ -118,12 +133,9 @@ class CustomerProfileView(APIView):
         return Response({
             "id": customer.id,
             "fullname": customer.fullname,
-            "email": customer.email,
-            "phone": customer.phone,
             "address": customer.address,
             "status": customer.status,
-            "is_active": customer.is_active,
-            "account_number": customer.account_number,
+            "submitter_no": customer.submitter_no,
         })
 
     # Create customer profile
