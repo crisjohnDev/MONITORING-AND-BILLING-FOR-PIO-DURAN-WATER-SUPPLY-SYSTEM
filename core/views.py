@@ -11,7 +11,7 @@ from .models import Billing, Payment
 from decimal import Decimal
 from openpyxl import load_workbook
 from collections import defaultdict
-
+from django.db import transaction
 @login_required
 def admin_dashboard(request):
 
@@ -132,95 +132,124 @@ def add_customer(request):
 @login_required
 def import_customers(request):
 
-    if request.method == "POST":
-
-        excel_file = request.FILES.get("excel_file")
-
-        if not excel_file:
-            messages.error(request, "Please upload an Excel file.")
-            return redirect("customers")
-
-        workbook = load_workbook(excel_file)
-        sheet = workbook.active
-
-        # Read header row
-        headers = []
-
-        for cell in sheet[1]:
-            if cell.value:
-                headers.append(str(cell.value).strip().lower())
-            else:
-                headers.append("")
-
-        required_headers = [
-            "fullname",
-            "submitter no.",
-            "address",
-        ]
-
-        for header in required_headers:
-            if header not in headers:
-                messages.error(request, f"Missing column: {header}")
-                return redirect("customers")
-
-        fullname_col = headers.index("fullname")
-        submitter_col = headers.index("submitter no.")
-        address_col = headers.index("address")
-
-        imported = 0
-        skipped = 0
-
-        for row in sheet.iter_rows(min_row=2):
-
-            fullname = str(row[fullname_col].value or "").strip()
-            submitter_no = str(row[submitter_col].value or "").strip()
-            address = str(row[address_col].value or "").strip()
-
-            # Skip empty rows
-            if not fullname and not submitter_no and not address:
-                continue
-
-            # Skip duplicate customers
-            if Customer.objects.filter(submitter_no=submitter_no).exists():
-                skipped += 1
-                continue
-
-            # Username will be the submitter number
-            username = submitter_no
-
-            # Ensure username is unique
-            counter = 1
-            while User.objects.filter(username=username).exists():
-                username = f"{submitter_no}_{counter}"
-                counter += 1
-
-            # Create user account
-            user = User.objects.create_user(
-                username=username,
-                password=submitter_no,   # Default password
-                role="customer",
-            )
-
-            # Create customer profile
-            Customer.objects.create(
-                user=user,
-                fullname=fullname,
-                submitter_no=submitter_no,
-                address=address,
-                status="old",
-            )
-
-            imported += 1
-
-        messages.success(
-            request,
-            f"{imported} customer(s) imported successfully. {skipped} duplicate(s) skipped."
-        )
-
+    if request.method != "POST":
         return redirect("customers")
 
-    return redirect("customers")
+    excel_file = request.FILES.get("excel_file")
 
+    if not excel_file:
+        messages.error(request, "Please upload an Excel file.")
+        return redirect("customers")
+
+    try:
+        workbook = load_workbook(
+            excel_file,
+            read_only=True,
+            data_only=True
+        )
+    except Exception:
+        messages.error(request, "Invalid Excel file.")
+        return redirect("customers")
+
+    sheet = workbook.active
+
+    # Read headers
+    header_row = next(
+        sheet.iter_rows(min_row=1, max_row=1, values_only=True)
+    )
+
+    headers = [
+        str(h).strip().lower() if h else ""
+        for h in header_row
+    ]
+
+    required_headers = [
+        "fullname",
+        "submitter no.",
+        "address",
+    ]
+
+    for header in required_headers:
+        if header not in headers:
+            messages.error(request, f"Missing column: {header}")
+            return redirect("customers")
+
+    fullname_col = headers.index("fullname")
+    submitter_col = headers.index("submitter no.")
+    address_col = headers.index("address")
+
+    # Load existing data only once
+    existing_submitters = set(
+        Customer.objects.values_list("submitter_no", flat=True)
+    )
+
+    existing_usernames = set(
+        User.objects.values_list("username", flat=True)
+    )
+
+    imported = 0
+    skipped = 0
+
+    try:
+        with transaction.atomic():
+
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+
+                fullname = str(row[fullname_col] or "").strip()
+                submitter_no = str(row[submitter_col] or "").strip()
+                address = str(row[address_col] or "").strip()
+
+                # Skip empty rows
+                if not fullname and not submitter_no and not address:
+                    continue
+
+                # Skip duplicates
+                if submitter_no in existing_submitters:
+                    skipped += 1
+                    continue
+
+                username = submitter_no
+
+                counter = 1
+                while username in existing_usernames:
+                    username = f"{submitter_no}_{counter}"
+                    counter += 1
+
+                # Create user
+                user = User.objects.create_user(
+                    username=username,
+                    password=submitter_no,
+                    role="customer",
+                )
+
+                existing_usernames.add(username)
+
+                # Create customer
+                Customer.objects.create(
+                    user=user,
+                    fullname=fullname,
+                    submitter_no=submitter_no,
+                    address=address,
+                    status="old",
+                )
+
+                existing_submitters.add(submitter_no)
+
+                imported += 1
+
+    except Exception as e:
+        messages.error(request, f"Import failed: {e}")
+        return redirect("customers")
+
+    workbook.close()
+
+    messages.success(
+        request,
+        f"{imported} customer(s) imported successfully. "
+        f"{skipped} duplicate(s) skipped."
+    )
+
+    return redirect("customers")
 # @login_required
 # def approve_applicant(request, id):
 #     if request.method == "POST":
