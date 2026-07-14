@@ -136,3 +136,6 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     )
 }
+LOGIN_URL = "login-view"
+LOGIN_REDIRECT_URL = "admin_dashboard"
+LOGOUT_REDIRECT_URL = "login-view"
