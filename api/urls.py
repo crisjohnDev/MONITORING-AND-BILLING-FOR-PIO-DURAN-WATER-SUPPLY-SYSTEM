@@ -14,4 +14,5 @@ urlpatterns = [
     path("customer/dashboard/", views.CustomerDashboardView.as_view(),name="customer_dashboard"),
     path("customer/payments/", views.CustomerPaymentHistoryView.as_view(), name="customer_payments"),
     path("customer/profile/", views.CustomerProfileView.as_view(), name="customer_profile_api"),
+    path("customer/notifications/", views.CustomerNotificationAPIView.as_view(), name="customer-notifications"),
 ]

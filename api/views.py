@@ -1,14 +1,15 @@
 from django.shortcuts import render
 
 # Create your views here.
+from django.db.models import Q
 from rest_framework import generics
-from .serializers import RegisterSerializer, CustomerSerializer
+from .serializers import RegisterSerializer, CustomerSerializer, NotificationSerializer
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
-from core.models import Billing, Payment
+from core.models import Billing, Payment, Notification
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
@@ -148,3 +149,42 @@ class CustomerProfileView(APIView):
             return Response(serializer.data)
 
         return Response(serializer.errors, status=400)
+    
+class CustomerNotificationAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        customer = request.user.customer_profile
+
+        # Extract barangay from address
+        barangay = ""
+
+        parts = customer.address.split(",")
+
+        if len(parts) >= 2:
+            barangay = parts[1].strip()
+
+        notifications = Notification.objects.filter(
+
+            Q(target="all") |
+
+            Q(
+                target="customer",
+                customer=customer
+            ) |
+
+            Q(
+                target="barangay",
+                barangay=barangay
+            )
+
+        ).order_by("-created_at")
+
+        serializer = NotificationSerializer(
+            notifications,
+            many=True
+        )
+
+        return Response(serializer.data)

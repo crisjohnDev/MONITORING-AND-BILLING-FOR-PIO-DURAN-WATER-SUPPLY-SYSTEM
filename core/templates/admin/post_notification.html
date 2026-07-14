@@ -1,0 +1,857 @@
+{% extends 'admin.html' %}
+
+{% block content %}
+<!-- Elevated Management Design System Styles with Live Filter & History Registry -->
+<style>
+    :root {
+        --tint-blue: #f0f4f8;
+        --focus-ring: rgba(29, 78, 216, 0.15);
+        --tint-amber: #fef3c7;
+        --tint-danger: #fee2e2;
+        --tint-success: #dcfce7;
+    }
+
+    /* Page Layout Adjustments */
+    .workspace-wrapper {
+        padding: 40px;
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+    }
+
+    /* Executive Header Structure */
+    .view-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 32px;
+        border-bottom: 2px solid var(--border-classic);
+        padding-bottom: 20px;
+    }
+
+    .view-header-title h2 {
+        font-family: 'Cinzel', serif;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--bg-navy);
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    .view-header-title p {
+        font-size: 13px;
+        color: var(--secondary-text);
+        margin-top: 4px;
+    }
+
+    /* Split-Grid Dashboard Layout */
+    .notification-grid {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 32px;
+        align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+        .notification-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Premium Container Styling */
+    .panel-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-classic);
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(15, 29, 58, 0.03);
+        overflow: hidden;
+        margin-bottom: 32px;
+    }
+
+    .panel-header {
+        background-color: #f8fafc;
+        padding: 18px 24px;
+        border-bottom: 1px solid var(--border-classic);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .panel-header-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .panel-header h3 {
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--bg-navy);
+        letter-spacing: 0.5px;
+    }
+
+    .panel-body {
+        padding: 28px;
+    }
+
+    /* Refined Form Infrastructure */
+    .form-group {
+        margin-bottom: 24px;
+    }
+
+    .form-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        margin-bottom: 8px;
+        color: var(--bg-navy);
+    }
+
+    .form-control, .form-select {
+        width: 100%;
+        padding: 12px 16px;
+        font-size: 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        color: var(--primary-text);
+        background-color: #ffffff;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .form-control::placeholder {
+        color: #94a3b8;
+    }
+
+    .form-control:focus, .form-select:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px var(--focus-ring);
+        background-color: #ffffff;
+    }
+
+    /* Structured Distribution Group Options */
+    .distribution-cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    @media (max-width: 640px) {
+        .distribution-cards {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .dist-card-label {
+        border: 1px solid var(--border-classic);
+        border-radius: 4px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        background-color: #f8fafc;
+        transition: all 0.2s ease;
+        text-align: center;
+    }
+
+    .dist-card-label:hover {
+        background-color: var(--tint-blue);
+        border-color: #cbd5e1;
+    }
+
+    .dist-card-label input[type="radio"] {
+        accent-color: var(--accent-blue);
+        width: 16px;
+        height: 16px;
+        margin-bottom: 4px;
+    }
+
+    .dist-card-label span {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--primary-text);
+    }
+
+    .dist-card-label.selected-target {
+        border-color: var(--accent-blue);
+        background-color: #eff6ff;
+    }
+
+    .dist-card-label.selected-target span {
+        color: var(--accent-blue);
+    }
+
+    /* Contextual Input Enclosures */
+    .dynamic-target {
+        background-color: #f1f5f9;
+        border: 1px solid var(--border-classic);
+        padding: 20px;
+        border-radius: 4px;
+        margin-top: 14px;
+        animation: slideDown 0.2s ease-out;
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* --- LIVE FILTER SEARCH UI EXTENSIONS --- */
+    .search-input-wrapper {
+        position: relative;
+        margin-bottom: 8px;
+    }
+
+    .search-input-wrapper i {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--secondary-text);
+        font-size: 14px;
+    }
+
+    .filter-results-list {
+        background-color: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        max-height: 200px;
+        overflow-y: auto;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .filter-item {
+        padding: 10px 14px;
+        font-size: 13px;
+        cursor: pointer;
+        border-bottom: 1px solid #f1f5f9;
+        color: var(--primary-text);
+        transition: background-color 0.1s ease;
+    }
+
+    .filter-item:hover {
+        background-color: var(--tint-blue);
+        color: var(--accent-blue);
+        font-weight: 600;
+    }
+
+    .no-matches-found {
+        padding: 12px 14px;
+        font-size: 13px;
+        color: #ef4444;
+        background-color: #fef2f2;
+        text-align: center;
+    }
+
+    .selection-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background-color: var(--bg-navy);
+        color: #ffffff;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 8px;
+        animation: slideDown 0.15s ease-out;
+    }
+
+    .selection-pill i {
+        cursor: pointer;
+        color: #fca5a5;
+    }
+
+    /* --- REGISTRY / HISTORY LIST TABLE DESIGN --- */
+    .table-container {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .classic-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 14px;
+    }
+
+    .classic-table th {
+        background-color: #f8fafc;
+        color: var(--primary-text);
+        font-weight: 700;
+        padding: 14px 20px;
+        border-bottom: 2px solid var(--border-classic);
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+    }
+
+    .classic-table td {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-classic);
+        color: var(--primary-text);
+        vertical-align: top;
+    }
+
+    .classic-table tr:hover td {
+        background-color: #f8fafc;
+    }
+
+    /* Semantic Status Badges */
+    .badge {
+        display: inline-block;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        border-radius: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .badge-general { background-color: var(--tint-blue); color: #2563eb; }
+    .badge-billing { background-color: var(--tint-amber); color: #d97706; }
+    .badge-maintenance { background-color: #ecefec; color: #475569; }
+    .badge-disconnection { background-color: var(--tint-danger); color: #dc2626; }
+    .badge-reconnection { background-color: var(--tint-success); color: var(--success-green); }
+
+    .scope-tag {
+        font-size: 12px;
+        color: var(--secondary-text);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .text-truncate-notice {
+        max-width: 280px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-transform: none;
+        text-overflow: ellipsis;
+        font-size: 13px;
+        color: var(--secondary-text);
+    }
+
+    /* Clean Info Callouts */
+    .utility-aside-box {
+        padding: 20px;
+        background-color: #f8fafc;
+        border-left: 3px solid var(--accent-gold);
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--secondary-text);
+        margin-bottom: 20px;
+    }
+
+    .utility-aside-box strong {
+        color: var(--bg-navy);
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    /* Action Buttons */
+    .actions-panel {
+        display: flex;
+        justify-content: flex-end;
+        padding-top: 12px;
+        border-top: 1px solid var(--border-classic);
+        margin-top: 28px;
+    }
+
+    .btn-submit {
+        background-color: var(--bg-navy);
+        color: #ffffff;
+        border: 1px solid transparent;
+        padding: 14px 28px;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        border-radius: 4px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-submit:hover {
+        background-color: #14254b;
+        box-shadow: 0 4px 12px rgba(15, 29, 58, 0.15);
+    }
+
+    .btn-submit i {
+        color: var(--accent-gold);
+        font-size: 14px;
+    }
+</style>
+
+<div class="workspace-wrapper">
+    
+    <!-- Executive Title Segment -->
+    <header class="view-header">
+        <div class="view-header-title">
+            <h2>Broadcast System Center</h2>
+            <p>Publish vital notifications, advisory updates, and system parameters across the utility service areas.</p>
+        </div>
+        <div class="admin-profile">
+            <div class="admin-avatar" style="font-family: 'Open Sans', sans-serif;">A</div>
+            <div class="admin-info">
+                <span>System Console</span>
+                <small>Operational Hub</small>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Split Grid Layout -->
+    <div class="notification-grid">
+        
+        <!-- Left Side: Core Input Workspace -->
+        <div class="left-column">
+            <main class="panel-card">
+                <div class="panel-header">
+                    <div class="panel-header-title">
+                        <i class="fa-solid fa-pen-to-square" style="color: var(--accent-blue);"></i>
+                        <h3>Notification Specifications</h3>
+                    </div>
+                </div>
+                
+                <div class="panel-body">
+                    <form action="" method="POST" id="notificationForm">
+                        {% csrf_token %}
+                        
+                        <input type="hidden" name="barangay" id="hidden-barangay-input">
+                        <input type="hidden" name="customer" id="hidden-customer-input">
+                        
+                        <!-- 1. Classification Node -->
+                        <div class="form-group">
+                            <label for="status">Notification Category</label>
+                            <select name="status" id="status" class="form-select" required>
+                                <option value="" disabled selected>-- Select Type --</option>
+                                <option value="general">General System Announcement</option>
+                                <option value="billing">Standard Billing Notice</option>
+                                <option value="payment_reminder">Payment Due Date Reminder</option>
+                                <option value="disconnection">Service Disconnection Advisory</option>
+                                <option value="reconnection">Service Reconnection Alert</option>
+                                <option value="maintenance">Infrastructure & Pipeline Maintenance</option>
+                                <option value="clearing_operation">Clearing & Watershed Operations</option>
+                            </select>
+                        </div>
+
+                        <!-- 2. Target Audience Layout -->
+                        <div class="form-group">
+                            <label>Target Scope Assignment</label>
+                            <div class="distribution-cards">
+                                <label class="dist-card-label selected-target" id="label-all">
+                                    <input type="radio" name="target" value="all" checked>
+                                    <span>All Consumers</span>
+                                </label>
+                                
+                                <label class="dist-card-label" id="label-barangay">
+                                    <input type="radio" name="target" value="barangay">
+                                    <span>Per Barangay</span>
+                                </label>
+                                
+                                <label class="dist-card-label" id="label-customer">
+                                    <input type="radio" name="target" value="customer">
+                                    <span>Single Account</span>
+                                </label>
+                            </div>
+
+                            <!-- Live Search Barangay Box -->
+                            <div id="barangay-select-box" class="dynamic-target hidden">
+                                <label style="font-size: 11px; margin-bottom: 6px;">Search/Filter Barangay Boundary</label>
+                                <div class="search-input-wrapper">
+                                    <input type="text" id="barangay-search" class="form-control" placeholder="Type to filter barangays...">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                </div>
+                                <ul id="barangay-results" class="filter-results-list">
+                                    {% for barangay in barangays %}
+                                        <li class="filter-item" data-value="{{ barangay }}">{{ barangay }}</li>
+                                    {% empty %}
+                                        <li class="filter-item" data-value="Barangay Iraya">Barangay Iraya</li>
+                                        <li class="filter-item" data-value="Barangay Malaking Ilog">Barangay Malaking Ilog</li>
+                                        <li class="filter-item" data-value="Barangay Sogod">Barangay Sogod</li>
+                                        <li class="filter-item" data-value="Barangay Centro (Poblacion)">Barangay Centro (Poblacion)</li>
+                                    {% endfor %}
+                                </ul>
+                                <div id="selected-barangay-pill" class="selection-pill hidden">
+                                    <span>Selected: None</span> <i class="fa-solid fa-circle-xmark" id="clear-barangay"></i>
+                                </div>
+                            </div>
+
+                            <!-- Live Search Individual Consumer Box -->
+                            <div id="consumer-select-box" class="dynamic-target hidden">
+                                <label style="font-size: 11px; margin-bottom: 6px;">Search/Filter Customer Reference</label>
+                                <div class="search-input-wrapper">
+                                    <input type="text" id="customer-search" class="form-control" placeholder="Type Acc No. or Name to query profile...">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                </div>
+                                <ul id="customer-results" class="filter-results-list">
+                                    {% for customer in customers %}
+                                        <li class="filter-item" data-id="{{ customer.id }}" data-search="{{ customer.submitter_no }} {{ customer.fullname }}">
+                                            {{ customer.submitter_no }} — {{ customer.fullname }}
+                                        </li>
+                                    {% empty %}
+                                        <li class="filter-item" data-id="1" data-search="ACC-2026-0001 Juan Dela Cruz">ACC-2026-0001 — Juan Dela Cruz</li>
+                                        <li class="filter-item" data-id="2" data-search="ACC-2026-0002 Maria Clara">ACC-2026-0002 — Maria Clara</li>
+                                        <li class="filter-item" data-id="3" data-search="ACC-2026-0003 Pedro Penduko">ACC-2026-0003 — Pedro Penduko</li>
+                                    {% endfor %}
+                                </ul>
+                                <div id="selected-customer-pill" class="selection-pill hidden">
+                                    <span>Selected: None</span> <i class="fa-solid fa-circle-xmark" id="clear-customer"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Message Body Assembly -->
+                        <div class="form-group">
+                            <label for="title">Header / Broadcast Subject</label>
+                            <input type="text" name="title" id="title" class="form-control" placeholder="Summarized notice headline (e.g., Emergency Pipeline Upgrades)" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="message">Transmission Message Content</label>
+                            <textarea name="message" id="message" class="form-control" rows="6" placeholder="Compose the complete text body details regarding the water network update..." required></textarea>
+                        </div>
+
+                        <!-- 4. Control Commit Layout -->
+                        <div class="actions-panel">
+                            <button type="submit" class="btn-submit">
+                                <i class="fa-solid fa-paper-plane"></i> Dispatch System Broadcast
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </main>
+
+            <!-- --- NEW FEATURE: LIST OF POSTED NOTIFICATIONS --- -->
+            <section class="panel-card">
+                <div class="panel-header">
+                    <div class="panel-header-title">
+                        <i class="fa-solid fa-clock-rotate-left" style="color: var(--accent-gold);"></i>
+                        <h3>Active System Broadcasts Registry</h3>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="classic-table">
+                        <thead>
+                            <tr>
+                                <th width="15%">Category</th>
+                                <th width="20%">Target</th>
+                                <th width="40%">Notification</th>
+                                <th width="15%">Date Issued</th>
+                                <th width="10%" style="text-align:center;">Action</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            {% for notification in notifications %}
+
+                            <tr>
+
+                                <!-- Notification Type -->
+                                <td>
+                                    <span class="badge badge-{{ notification.status }}">
+                                        {{ notification.get_status_display }}
+                                    </span>
+                                </td>
+
+                                <!-- Target -->
+                                <td>
+
+                                    {% if notification.target == "all" %}
+
+                                        <span class="scope-tag">
+                                            <i class="fa-solid fa-users"></i>
+                                            All Customers
+                                        </span>
+
+                                    {% elif notification.target == "barangay" %}
+
+                                        <span class="scope-tag">
+                                            <i class="fa-solid fa-map-location-dot"></i>
+                                            {{ notification.barangay }}
+                                        </span>
+
+                                    {% elif notification.target == "customer" %}
+
+                                        <span class="scope-tag">
+                                            <i class="fa-solid fa-user"></i>
+                                            {{ notification.customer.fullname }}
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+                                <!-- Title & Message -->
+                                <td>
+                                    <strong style="display:block;color:var(--bg-navy);margin-bottom:5px;">
+                                        {{ notification.title }}
+                                    </strong>
+
+                                    <small style="color:#666;">
+                                        {{ notification.message|truncatechars:120 }}
+                                    </small>
+                                </td>
+
+                                <!-- Date -->
+                                <td>
+                                    {{ notification.created_at|date:"M d, Y" }}<br>
+                                    <small>{{ notification.created_at|date:"h:i A" }}</small>
+                                </td>
+
+                                <!-- Actions -->
+                                <td style="text-align:center;">
+
+                                    <a href="{% url 'delete-notification' notification.id %}"
+                                    class="btn btn-sm btn-danger"
+                                    onclick="return confirm('Delete this notification?');">
+
+                                        <i class="fa-solid fa-trash"></i>
+
+                                    </a>
+
+                                </td>
+
+                            </tr>
+
+                            {% empty %}
+
+                            <tr>
+                                <td colspan="5" style="text-align:center;padding:40px;color:#777;">
+                                    <i class="fa-solid fa-bell-slash"
+                                    style="font-size:40px;color:#c5c5c5;"></i>
+
+                                    <br><br>
+
+                                    <strong>No notifications have been posted yet.</strong>
+
+                                    <br>
+
+                                    <small>Create your first notification using the form above.</small>
+                                </td>
+                            </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- Right Side: Regulatory and Safety Sidebar Info Panels -->
+        <aside class="sidebar-info-column">
+            <div class="panel-card">
+                <div class="panel-header">
+                    <div class="panel-header-title">
+                        <i class="fa-solid fa-circle-info" style="color: var(--accent-gold);"></i>
+                        <h3>Dispatch Instructions</h3>
+                    </div>
+                </div>
+                <div class="panel-body" style="padding: 20px; font-size: 13px;">
+                    <div class="utility-aside-box">
+                        <strong>Live Query Engine</strong>
+                        Type key segments of system accounts or boundary lines. The matching targets populate on-screen natively instantly.
+                    </div>
+                    <p style="color: var(--secondary-text); line-height: 1.5;">Ensure that details such as affected schedule zones, estimated uptime windows, or payment instructions are completely factual before initiating the broadcast engine.</p>
+                </div>
+            </div>
+
+            <div class="panel-card">
+                <div class="panel-header">
+                    <div class="panel-header-title">
+                        <i class="fa-solid fa-shield-halved" style="color: var(--success-green);"></i>
+                        <h3>Verification Status</h3>
+                    </div>
+                </div>
+                <div class="panel-body" style="padding: 20px; font-size: 12px; color: var(--secondary-text);">
+                    <p><i class="fa-solid fa-check" style="color: var(--success-green); margin-right: 6px;"></i> Secure Token Active</p>
+                    <p style="margin-top: 8px;"><i class="fa-solid fa-check" style="color: var(--success-green); margin-right: 6px;"></i> Broadcast Engine: Online</p>
+                </div>
+            </div>
+        </aside>
+
+    </div>
+</div>
+
+<!-- Dynamic Controls & Live Filter Implementation Layer -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const targetRadios = document.querySelectorAll('input[name="target"]');
+    const barangayBox = document.getElementById("barangay-select-box");
+    const consumerBox = document.getElementById("consumer-select-box");
+    
+    const barangaySearch = document.getElementById("barangay-search");
+    const barangayResults = document.getElementById("barangay-results");
+    const customerSearch = document.getElementById("customer-search");
+    const customerResults = document.getElementById("customer-results");
+
+    const hiddenBarangay = document.getElementById("hidden-barangay-input");
+    const hiddenCustomer = document.getElementById("hidden-customer-input");
+
+    const barangayPill = document.getElementById("selected-barangay-pill");
+    const customerPill = document.getElementById("selected-customer-pill");
+
+    function updateCardHighlights() {
+        targetRadios.forEach(radio => {
+            const parentLabel = radio.closest('.dist-card-label');
+            if (radio.checked) {
+                parentLabel.classList.add('selected-target');
+            } else {
+                parentLabel.classList.remove('selected-target');
+            }
+        });
+    }
+
+    targetRadios.forEach(radio => {
+        radio.addEventListener("change", function () {
+            updateCardHighlights();
+            barangayBox.classList.add("hidden");
+            consumerBox.classList.add("hidden");
+            resetBarangaySelection();
+            resetCustomerSelection();
+
+            if (this.value === "barangay") {
+                barangayBox.classList.remove("hidden");
+            } else if (this.value === "customer") {
+                consumerBox.classList.remove("hidden");
+            }
+        });
+    });
+
+    // --- BARANGAY FILTER ---
+    barangaySearch.addEventListener("input", function() {
+        const query = this.value.toLowerCase().trim();
+        const items = barangayResults.querySelectorAll(".filter-item");
+        let matches = 0;
+
+        const classicNoMatch = barangayResults.querySelector(".no-matches-found");
+        if(classicNoMatch) classicNoMatch.remove();
+
+        items.forEach(item => {
+            if (item.textContent.toLowerCase().includes(query)) {
+                item.classList.remove("hidden");
+                matches++;
+            } else {
+                item.classList.add("hidden");
+            }
+        });
+
+        if (matches === 0) {
+            const noMatchRow = document.createElement("li");
+            noMatchRow.className = "no-matches-found";
+            noMatchRow.textContent = "No matching Barangay boundaries identified.";
+            barangayResults.appendChild(noMatchRow);
+        }
+    });
+
+    barangayResults.addEventListener("click", function(e) {
+        const targetItem = e.target.closest(".filter-item");
+        if (!targetItem) return;
+        const selectedVal = targetItem.getAttribute("data-value");
+        hiddenBarangay.value = selectedVal;
+        barangayPill.querySelector("span").textContent = `Target: ${selectedVal}`;
+        barangayPill.classList.remove("hidden");
+        barangaySearch.value = selectedVal;
+    });
+
+    document.getElementById("clear-barangay").addEventListener("click", resetBarangaySelection);
+
+    function resetBarangaySelection() {
+        hiddenBarangay.value = "";
+        barangaySearch.value = "";
+        barangayPill.classList.add("hidden");
+        barangayResults.querySelectorAll(".filter-item").forEach(i => i.classList.remove("hidden"));
+        const noMatch = barangayResults.querySelector(".no-matches-found");
+        if(noMatch) noMatch.remove();
+    }
+
+    // --- CUSTOMER FILTER ---
+    customerSearch.addEventListener("input", function() {
+        const query = this.value.toLowerCase().trim();
+        const items = customerResults.querySelectorAll(".filter-item");
+        let matches = 0;
+
+        const classicNoMatch = customerResults.querySelector(".no-matches-found");
+        if(classicNoMatch) classicNoMatch.remove();
+
+        items.forEach(item => {
+            const searchPool = item.getAttribute("data-search").toLowerCase();
+            if (searchPool.includes(query)) {
+                item.classList.remove("hidden");
+                matches++;
+            } else {
+                item.classList.add("hidden");
+            }
+        });
+
+        if (matches === 0) {
+            const noMatchRow = document.createElement("li");
+            noMatchRow.className = "no-matches-found";
+            noMatchRow.textContent = "No matching profiles found in database logs.";
+            customerResults.appendChild(noMatchRow);
+        }
+    });
+
+    customerResults.addEventListener("click", function(e) {
+        const targetItem = e.target.closest(".filter-item");
+        if (!targetItem) return;
+        const customerId = targetItem.getAttribute("data-id");
+        const profileDisplay = targetItem.textContent.trim();
+        hiddenCustomer.value = customerId;
+        customerPill.querySelector("span").textContent = `Selected Target Account`;
+        customerPill.classList.remove("hidden");
+        customerSearch.value = profileDisplay;
+    });
+
+    document.getElementById("clear-customer").addEventListener("click", resetCustomerSelection);
+
+    function resetCustomerSelection() {
+        hiddenCustomer.value = "";
+        customerSearch.value = "";
+        customerPill.classList.add("hidden");
+        customerResults.querySelectorAll(".filter-item").forEach(i => i.classList.remove("hidden"));
+        const noMatch = customerResults.querySelector(".no-matches-found");
+        if(noMatch) noMatch.remove();
+    }
+
+    // --- SECURITY PRE-FLIGHT VALIDATION ---
+    document.getElementById("notificationForm").addEventListener("submit", function(e) {
+        const currentScope = document.querySelector('input[name="target"]:checked').value;
+        if (currentScope === "barangay" && !hiddenBarangay.value) {
+            alert("Error: Please explicitly choose a targeted Barangay boundary block before submission.");
+            e.preventDefault();
+            barangaySearch.focus();
+        } else if (currentScope === "customer" && !hiddenCustomer.value) {
+            alert("Error: Please isolate a target Customer account profile reference mapping before dispatching.");
+            e.preventDefault();
+            customerSearch.focus();
+        }
+    });
+
+    updateCardHighlights();
+});
+</script>
+{% endblock %}

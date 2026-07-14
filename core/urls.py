@@ -18,5 +18,7 @@ urlpatterns = [
     path("process-payment/<int:id>/", views.process_payment, name="process_payment"),
     path('reports/', views.reports, name='reports'),
     path("official-receipt/<int:payment_id>/", views.official_receipt, name="official_receipt",),
-    path("customer/<int:customer_id>/",views.customer_profile, name="customer_profile")
+    path("customer/<int:customer_id>/",views.customer_profile, name="customer_profile"),
+    path('post-notification/', views.post_notification, name='post-notifacation'),
+    path("notifications/delete/<int:pk>/", views.delete_notification, name="delete-notification"),
 ]

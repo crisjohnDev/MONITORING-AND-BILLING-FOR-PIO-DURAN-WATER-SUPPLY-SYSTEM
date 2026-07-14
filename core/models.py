@@ -4,9 +4,13 @@ from django.db import models
 from customer.models import Customer
 from decimal import Decimal
 from django.utils import timezone
+from datetime import timedelta
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
+
+def default_expiry():
+    return timezone.now() + timedelta(hours=24)
 
 
 class Billing(models.Model):
@@ -180,3 +184,60 @@ class Payment(models.Model):
 
     def __str__(self):
         return self.receipt_number
+
+
+class Notification(models.Model):
+
+    TARGET_CHOICES = (
+        ("customer", "Single Customer"),
+        ("barangay", "Barangay"),
+        ("all", "All Customers"),
+    )
+
+    STATUS_CHOICES = (
+        ("general", "General"),
+        ("billing", "Billing"),
+        ("payment_reminder", "Payment Reminder"),
+        ("disconnection", "Disconnection"),
+        ("reconnection", "Reconnection"),
+        ("maintenance", "Maintenance"),
+        ("clearing_operation", "Clearing Operation"),
+    )
+
+    target = models.CharField(
+        max_length=20,
+        choices=TARGET_CHOICES,
+        default="customer"
+    )
+
+    customer = models.ForeignKey(
+        Customer,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="notifications"
+    )
+
+    barangay = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True
+    )
+
+    status = models.CharField(
+        max_length=30,
+        choices=STATUS_CHOICES,
+        default="general"
+    )
+
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(default=default_expiry)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.title

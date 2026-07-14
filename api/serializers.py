@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from accounts.models import User
 from customer.models import Customer
+from core.models import Notification
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -26,3 +28,22 @@ class CustomerSerializer(serializers.ModelSerializer):
         model = Customer
         fields = "__all__"
         read_only_fields = ["user"]
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+
+    category = serializers.CharField(source="get_status_display", read_only=True)
+
+    class Meta:
+        model = Notification
+        fields = [
+            "id",
+            "title",
+            "message",
+            "status",
+            "category",
+            "target",
+            "barangay",
+            "created_at",
+            "expires_at",
+        ]

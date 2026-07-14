@@ -7,7 +7,7 @@ from django.db.models import Q, Sum
 from datetime import datetime, date, timedelta
 from django.utils import timezone
 import re
-from .models import Billing, Payment
+from .models import Billing, Payment, Notification
 from decimal import Decimal
 from openpyxl import load_workbook
 from collections import defaultdict
@@ -628,3 +628,65 @@ def official_receipt(request, payment_id):
             "payment": payment
         }
     )
+
+@login_required
+def post_notification(request):
+
+    customers = Customer.objects.order_by("fullname")
+    notifications = Notification.objects.select_related("customer").order_by("-created_at")
+
+    # Get unique barangays from customer addresses
+    barangays = sorted({
+        customer.address.split(",")[1].strip()
+        for customer in customers
+        if len(customer.address.split(",")) >= 2
+    })
+
+    if request.method == "POST":
+
+        target = request.POST.get("target")
+        customer_id = request.POST.get("customer")
+        barangay = request.POST.get("barangay")
+        status = request.POST.get("status")
+        title = request.POST.get("title")
+        message = request.POST.get("message")
+
+        customer = None
+
+        if target == "customer":
+            if not customer_id:
+                messages.error(request, "Please select a customer.")
+                return redirect("post-notifacation")
+
+            customer = Customer.objects.get(id=customer_id)
+
+        elif target == "barangay":
+            if not barangay:
+                messages.error(request, "Please select a barangay.")
+                return redirect("post-notifacation")
+
+        Notification.objects.create(
+            target=target,
+            customer=customer,
+            barangay=barangay if target == "barangay" else None,
+            status=status,
+            title=title,
+            message=message,
+        )
+
+        messages.success(request, "Notification posted successfully.")
+        return redirect("post-notifacation")
+
+    return render(request, "admin/post_notification.html", {
+        "customers": customers,
+        "barangays": barangays,
+        "notifications": notifications,
+    })
+
+@login_required
+def delete_notification(request, pk):
+    notification = get_object_or_404(Notification, pk=pk)
+    notification.delete()
+
+    messages.success(request, "Notification deleted successfully.")
+    return redirect("post-notifacation")
