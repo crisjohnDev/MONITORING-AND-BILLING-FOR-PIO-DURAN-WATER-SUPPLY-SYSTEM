@@ -188,3 +188,30 @@ class CustomerNotificationAPIView(APIView):
         )
 
         return Response(serializer.data)
+    
+
+
+class NotificationUnreadCountAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        customer = request.user.customer_profile
+
+        barangay = None
+
+        if customer.address:
+            parts = customer.address.split(",")
+
+            if len(parts) >= 2:
+                barangay = parts[1].strip()
+
+        notifications = Notification.objects.filter(
+            Q(target="all") |
+            Q(target="customer", customer=customer) |
+            Q(target="barangay", barangay=barangay)
+        )
+
+        return Response({
+            "count": notifications.count()
+        })

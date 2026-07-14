@@ -47,3 +47,5 @@ class NotificationSerializer(serializers.ModelSerializer):
             "created_at",
             "expires_at",
         ]
+
+
