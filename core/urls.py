@@ -21,4 +21,6 @@ urlpatterns = [
     path("customer/<int:customer_id>/",views.customer_profile, name="customer_profile"),
     path('post-notification/', views.post_notification, name='post-notifacation'),
     path("notifications/delete/<int:pk>/", views.delete_notification, name="delete-notification"),
+    path("reports/paid/", views.paid_report, name="paid_report"),
+    path("reports/unpaid/", views.unpaid_report, name="unpaid_report"),
 ]

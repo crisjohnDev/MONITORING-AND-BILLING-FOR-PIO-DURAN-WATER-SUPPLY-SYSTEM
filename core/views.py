@@ -13,6 +13,9 @@ from openpyxl import load_workbook
 from collections import defaultdict
 from django.contrib.auth.hashers import make_password
 from django.db import transaction
+from django.db.models import Sum, Count
+from django.db.models.functions import Coalesce
+import json
 
 @login_required
 def admin_dashboard(request):
@@ -576,6 +579,7 @@ def process_payment(request, id):
     )
 
 
+
 @login_required
 def reports(request):
 
@@ -589,6 +593,9 @@ def reports(request):
         .order_by("-payment_date")
     )
 
+    # ===============================
+    # Dashboard Summary
+    # ===============================
     total_collections = payments.aggregate(
         total=Sum("amount_paid")
     )["total"] or Decimal("0.00")
@@ -600,11 +607,53 @@ def reports(request):
     for payment in payments:
         total_consumption += payment.billing.consumption
 
+    # ===============================
+    # Consumption per Barangay
+    # (Extracted from address)
+    # ===============================
+    barangay_totals = defaultdict(float)
+
+    billings = Billing.objects.select_related("customer")
+
+    for billing in billings:
+
+        address = billing.customer.address or ""
+
+        # Example:
+        # Purok 1, Barangay 1, Pioduran, Albay
+        parts = [part.strip() for part in address.split(",")]
+
+        if len(parts) >= 2:
+            barangay = parts[1]
+        else:
+            barangay = "Unknown"
+
+        barangay_totals[barangay] += float(billing.consumption)
+
+    barangay_labels = list(barangay_totals.keys())
+    barangay_values = list(barangay_totals.values())
+
+    # ===============================
+    # Paid vs Unpaid Bills
+    # ===============================
+    paid = Billing.objects.filter(status="paid").count()
+    unpaid = Billing.objects.filter(status="unpaid").count()
+
+    # ===============================
+    # Context
+    # ===============================
     context = {
         "payments": payments,
+
         "total_collections": total_collections,
         "total_receipts": total_receipts,
         "total_consumption": total_consumption,
+
+        "barangay_labels": json.dumps(barangay_labels),
+        "barangay_values": json.dumps(barangay_values),
+
+        "paid": paid,
+        "unpaid": unpaid,
     }
 
     return render(request, "admin/reports.html", context)
@@ -690,3 +739,32 @@ def delete_notification(request, pk):
 
     messages.success(request, "Notification deleted successfully.")
     return redirect("post-notifacation")
+
+@login_required
+def paid_report(request):
+
+    billings = (
+        Billing.objects
+        .filter(status="paid")
+        .select_related("customer")
+        .order_by("customer__fullname")
+    )
+
+    return render(request, "admin/paid_report.html", {
+        "billings": billings
+    })
+
+
+@login_required
+def unpaid_report(request):
+
+    billings = (
+        Billing.objects
+        .filter(status="unpaid")
+        .select_related("customer")
+        .order_by("customer__fullname")
+    )
+
+    return render(request, "admin/unpaid_report.html", {
+        "billings": billings
+    })
