@@ -1,0 +1,323 @@
+{% extends 'admin.html' %}
+
+{% block content %}
+<header class="top-navbar">
+    <div class="page-title">
+        <h1 id="current-view-title">
+            {% if barangay %}Modify Geographic Record{% else %}Add New Barangay Registry{% endif %}
+        </h1>
+    </div>
+    
+    <div class="admin-profile">
+        <div class="admin-info">
+            <small>System Administrator</small>
+        </div>
+        <div class="admin-avatar">AD</div>
+    </div>
+</header>
+
+<div class="workspace">
+    
+    <!-- Navigation Back Link -->
+    <div class="action-bar-back">
+
+        <a href="{% url "brgy_list" %}" class="btn-back">
+            <i class="fa-solid fa-arrow-left-long"></i> Return to Barangay Registry
+        </a>
+    </div>
+
+    <!-- Main Dynamic Form Block -->
+    <div class="data-section form-container-max">
+        <div class="section-header">
+            <h3>Geographical Location Context</h3>
+        </div>
+
+        {% if messages %}
+            <div class="alert-container">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {% if message.tags == 'success' %}
+                            <i class="fa-solid fa-circle-check alert-icon"></i>
+                        {% elif message.tags == 'error' or message.tags == 'danger' %}
+                            <i class="fa-solid fa-circle-exclamation alert-icon"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="fa-solid fa-triangle-exclamation alert-icon"></i>
+                        {% else %}
+                            <i class="fa-solid fa-circle-info alert-icon"></i>
+                        {% endif %}
+                        <div class="alert-content">{{ message }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        <form method="POST" class="classic-form">
+            {% csrf_token %}
+            
+            <div class="form-grid">
+                <!-- Barangay Name Field -->
+                <div class="form-group full-width">
+                    <label for="name">Barangay Name</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-map-location-dot input-icon"></i>
+                        <input type="text" id="name" name="barangay_name" 
+                               value="{{ brgy.barangay_name }}"
+                               placeholder="e.g., Poblacion 1" required>
+                    </div>
+                </div>
+
+                <!-- Municipality Field -->
+                <div class="form-group half-width">
+                    <label for="municipality">Municipality / City</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-city input-icon"></i>
+                        <input type="text" id="municipality" name="municipality" 
+                               value="{% if brgy %}{{ brgy.municipality }}{% else %}Pio Duran{% endif %}" 
+                               placeholder="e.g., Pio Duran" required>
+                    </div>
+                </div>
+
+                <!-- Province Field -->
+                <div class="form-group half-width">
+                    <label for="province">Province</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-landmark input-icon"></i>
+                        <input type="text" id="province" name="province" 
+                               value="{% if brgy %}{{ brgy.province }}{% else %}Albay{% endif %}" 
+                               placeholder="e.g., Albay" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Controls Footer -->
+            <div class="form-actions-footer">
+                <a href="{% url 'brgy_list' %}" class="btn-form reset-cancel">Cancel</a>
+                <button type="submit" class="btn-form save-commit">
+                    <i class="fa-solid fa-floppy-disk"></i> 
+                    {% if barangay %}Update Record{% else %}Save Barangay{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .action-bar-back {
+        display: flex;
+        justify-content: flex-start;
+        margin-bottom: -10px;
+    }
+
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--secondary-text);
+        text-decoration: none;
+        transition: color 0.15s ease;
+    }
+
+    .btn-back:hover {
+        color: var(--accent-blue);
+    }
+
+    .form-container-max {
+        max-width: 600px; /* Slimmer footprint focused entirely on 3 logical elements */
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .classic-form {
+        padding: 30px;
+        background-color: #ffffff;
+        border: 1px solid var(--border-classic);
+        border-radius: 3px;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-group.half-width {
+        grid-column: span 2;
+    }
+
+    .form-group.full-width {
+        grid-column: span 4;
+    }
+
+    .form-group label {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--bg-navy);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .input-wrapper {
+        position: relative;
+        width: 100%;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 14px;
+        pointer-events: none;
+    }
+
+    .input-wrapper input {
+        width: 100%;
+        height: 42px;
+        padding: 8px 12px 8px 42px;
+        font-size: 14px;
+        color: var(--primary-text);
+        background-color: #ffffff;
+        border: 1px solid var(--border-classic);
+        border-radius: 3px;
+        box-sizing: border-box;
+        transition: all 0.15s ease;
+    }
+
+    .input-wrapper input:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.05);
+    }
+
+    .form-actions-footer {
+        margin-top: 36px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border-classic);
+        display: flex;
+        justify-content: flex-end;
+        gap: 16px;
+        grid-column: span 4;
+    }
+
+    .btn-form {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 40px;
+        padding: 0 24px;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border: none;
+    }
+
+    .btn-form.reset-cancel {
+        background-color: transparent;
+        border: 1px solid var(--border-classic);
+        color: var(--secondary-text);
+    }
+
+    .btn-form.reset-cancel:hover {
+        background-color: #f1f5f9;
+        color: var(--primary-text);
+    }
+
+    .btn-form.save-commit {
+        background-color: var(--accent-gold);
+        color: #ffffff;
+    }
+
+    .btn-form.save-commit:hover {
+        background-color: #9a4305;
+    }
+
+/* Alert Messages Design Upgrade */
+    .alert-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 24px;
+        width: 100%;
+    }
+
+    .alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 18px;
+        border-radius: 3px;
+        font-size: 14px;
+        line-height: 1.5;
+        border: 1px solid var(--border-classic);
+        background-color: #ffffff;
+    }
+
+    .alert-icon {
+        font-size: 16px;
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+
+    .alert-content {
+        flex-grow: 1;
+        font-weight: 500;
+    }
+
+    /* Django Message Variant Classes */
+    .alert-success {
+        border-left: 4px solid #10b981;
+        background-color: #f0fdf4;
+        color: #14532d;
+    }
+    .alert-success .alert-icon { color: #10b981; }
+
+    .alert-danger, .alert-error {
+        border-left: 4px solid #ef4444;
+        background-color: #fef2f2;
+        color: #7f1d1d;
+    }
+    .alert-danger .alert-icon, .alert-error .alert-icon { color: #ef4444; }
+
+    .alert-warning {
+        border-left: 4px solid #f59e0b;
+        background-color: #fffbeb;
+        color: #78350f;
+    }
+    .alert-warning .alert-icon { color: #f59e0b; }
+
+    .alert-info {
+        border-left: 4px solid var(--accent-blue, #1d4ed8);
+        background-color: #eff6ff;
+        color: #1e3a8a;
+    }
+    .alert-info .alert-icon { color: var(--accent-blue, #1d4ed8); }
+
+    @media (max-width: 640px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+            gap: 18px;
+        }
+        .form-group.half-width, 
+        .form-group.full-width {
+            grid-column: span 1;
+        }
+        .form-actions-footer {
+            grid-column: span 1;
+        }
+    }
+</style>
+{% endblock %}

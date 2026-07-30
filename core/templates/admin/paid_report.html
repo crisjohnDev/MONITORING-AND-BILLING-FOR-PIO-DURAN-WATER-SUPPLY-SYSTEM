@@ -1,5 +1,5 @@
 {% extends 'admin.html' %}
-
+{% load static %}
 {% block content %}
 <!-- Top Management Header Bar (Inherits Admin Navbar Layout) -->
 <header class="top-navbar">
@@ -30,15 +30,41 @@
         
         <!-- Official Institutional Header Layout -->
         <div class="report-header">
-            <div class="org-details">
-                <h2>PIO DURAN WATER SUPPLY SYSTEM</h2>
-                <h3>Monitoring & Billing System</h3>
-                <p><i class="fa-solid fa-location-dot" style="margin-right: 4px; color: var(--primary);"></i> Pioduran, Albay</p>
+            <div class="header-brand-group">
+                <!-- System Logo Block -->
+                <div class="report-logo-wrapper">
+                   
+                    <img src="{% static "images/PWSS.png" %}" alt="PDWSS Logo" class="report-logo-img" onerror="this.style.display='none'; document.getElementById('logo-fallback-icon').style.display='flex';">
+                    <!-- FontAwesome System Fallback Icon if image pathway fails -->
+                    <div id="logo-fallback-icon" class="logo-fallback-box" style="display: none;">
+                        <i class="fa-solid fa-droplet"></i>
+                    </div>
+                </div>
+                
+                <div class="org-details">
+                    <h2>PIO DURAN WATER SUPPLY SYSTEM</h2>
+                    <h3>Monitoring & Billing System</h3>
+                    <p><i class="fa-solid fa-location-dot" style="margin-right: 4px; color: var(--primary);"></i> Pioduran, Albay</p>
+                </div>
             </div>
+            
             <div class="report-meta">
                 <h1 class="report-title">Paid Accounts Report</h1>
+
                 <div class="report-date">
-                    Report Generated: <span class="font-semibold">{% now "F d, Y" %}</span>
+                    Billing Coverage:
+                    <span class="font-semibold">
+                        {% if billings %}
+                            {{ billings.0.billing_month|date:"F Y" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="report-date">
+                    Report Generated:
+                    <span class="font-semibold">{% now "F d, Y" %}</span>
                 </div>
             </div>
         </div>
@@ -62,7 +88,7 @@
                     <tr>
                         <td class="center font-semibold text-muted">{{ forloop.counter }}</td>
                         <td class="font-semibold font-mono">{{ billing.customer.submitter_no }}</td>
-                        <td class="font-semibold">{{ billing.customer.fullname }}</td>
+                        <td class="font-semibold">{{ billing.customer.firstname }} {{ billing.customer.lastname }}</td>
                         <td>{{ billing.customer.address }}</td>
                         <td class="right font-mono">{{ billing.consumption }} m³</td>
                         <td class="right font-semibold font-mono color-green">₱{{ billing.total_amount }}</td>
@@ -86,13 +112,11 @@
         <div class="footer-signatures">
             <div class="signature-block">
                 <div class="signature-line">
-                    <div class="signer-name">___________________________</div>
                     <div class="signer-title">Prepared By</div>
                 </div>
             </div>
             <div class="signature-block">
                 <div class="signature-line">
-                    <div class="signer-name">___________________________</div>
                     <div class="signer-title">Approved By</div>
                 </div>
             </div>
@@ -103,12 +127,12 @@
 
 <style>
     :root {
-        --primary: #115e59; /* Matching teal scheme for the printed document */
+        --primary: black; /* Matching teal scheme for the printed document */
         --primary-light: #f0fdfa;
         --text-dark: #1e293b;
         --text-muted: #64748b;
         --border-color: #cbd5e1;
-        --success: #15803d;
+        --success: black;
         --success-bg: #dcfce7;
     }
 
@@ -149,11 +173,11 @@
     }
 
     .btn-print:hover {
-        background: #0f766e;
-        border-color: #0f766e;
+        
+        border-color: black;
     }
 
-    /* Header Layout */
+    /* Header Structural Components */
     .report-header {
         display: flex;
         justify-content: space-between;
@@ -161,6 +185,41 @@
         margin-bottom: 35px;
         border-bottom: 2px solid var(--primary);
         padding-bottom: 20px;
+    }
+
+    .header-brand-group {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    /* Logo Housing Frame CSS rules */
+    .report-logo-wrapper {
+        width: 64px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .report-logo-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .logo-fallback-box {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background-color: var(--primary-light);
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        border: 1px dashed var(--primary);
     }
 
     .org-details h2 {
@@ -247,7 +306,7 @@
     .center { text-align: center; }
     .font-mono { font-family: monospace; font-size: 13px; }
     .font-semibold { font-weight: 600; }
-    .color-green { color: var(--success-green); }
+    .color-green { color: var(--success); }
 
     /* Status Badge */
     .status-badge {
@@ -264,7 +323,7 @@
 
     /* Signature Sections */
     .footer-signatures {
-        margin-top: 60px;
+        margin-top: 80px;
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 100px;
@@ -272,28 +331,24 @@
     }
 
     .signature-block {
-        text-align: center;
+        display: flex;
+        justify-content: center;
     }
 
     .signature-line {
         width: 100%;
         max-width: 280px;
-        margin: 0 auto;
-        border-top: 1.5px solid var(--text-dark);
+        border-top: 1.5px solid #000000;
         padding-top: 8px;
-    }
-
-    .signer-name {
-        font-weight: 700;
-        font-size: 14px;
-        color: var(--text-dark);
-        text-transform: uppercase;
+        text-align: center;
     }
 
     .signer-title {
-        font-size: 12px;
+        font-size: 13px;
+        font-weight: 700;
         color: var(--text-muted);
-        margin-top: 2px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
     }
 
     /* --- STRICT PRINT ENGINE CONTEXT --- */
@@ -319,6 +374,7 @@
         /* Standardize report pages and clear background shadows */
         body {
             background-color: #ffffff !important;
+            color: #000000 !important;
             margin: 0;
             padding: 0;
         }
@@ -330,30 +386,78 @@
             margin: 0 !important;
         }
 
+        .report-header {
+            border-bottom: 2px solid #000000 !important;
+        }
+
+        /* Force brand identity and typography fields to absolute black */
+        .org-details h2,
+        .org-details h3,
+        .org-details p,
+        .org-details p i,
+        .report-title,
+        .report-date {
+            color: #000000 !important;
+        }
+
         .table-container {
-            border: none !important;
+            border: 1px solid #000000 !important;
             box-shadow: none !important;
         }
 
+        table {
+            border: 1px solid #000000 !important;
+        }
+
         th {
-            background-color: #115e59 !important;
+            background-color: #000000 !important;
             color: #ffffff !important;
+            border: 1px solid #000000 !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
+        }
+
+        td {
+            color: #000000 !important;
+            border-bottom: 1px solid #000000 !important;
+        }
+
+        /* Convert utility helpers to clear print black */
+        .text-muted,
+        .color-green {
+            color: #000000 !important;
         }
 
         tbody tr:nth-child(even) {
-            background-color: #f8fafc !important;
+            background-color: #f2f2f2 !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
 
+        /* Convert Paid Badge to high-contrast monochrome layout */
         .status-badge {
-            background-color: #dcfce7 !important;
-            color: #15803d !important;
-            border: 1px solid #bbf7d0;
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 1px solid #000000 !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
+        }
+
+        /* Convert fallback icon design */
+        .logo-fallback-box {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 1px dashed #000000 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .signature-line {
+            border-top: 1.5px solid #000000 !important;
+        }
+
+        .signer-title {
+            color: #000000 !important;
         }
 
         .footer-signatures {

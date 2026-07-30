@@ -1,5 +1,5 @@
 {% extends 'admin.html' %}
-
+{% load static %}
 {% block content %}
 <!-- Top Management Header Bar (Inherits Admin Navbar Layout) -->
 <header class="top-navbar">
@@ -30,15 +30,41 @@
         
         <!-- Official Institutional Header Layout -->
         <div class="report-header">
-            <div class="org-details">
-                <h2>PIO DURAN WATER SUPPLY SYSTEM</h2>
-                <h3>Monitoring & Billing System</h3>
-                <p><i class="fa-solid fa-location-dot" style="margin-right: 4px; color: var(--primary);"></i> Pioduran, Albay</p>
+            <div class="header-brand-group">
+                <!-- System Logo Block -->
+                <div class="report-logo-wrapper">
+                    <!-- Replace the source path below with your static folder asset location -->
+                    <img src="{% static "images/PWSS.png" %}" alt="PDWSS Logo" class="report-logo-img" onerror="this.style.display='none'; document.getElementById('logo-fallback-icon').style.display='flex';">
+                    <!-- FontAwesome System Fallback Icon if image pathway fails -->
+                    <div id="logo-fallback-icon" class="logo-fallback-box" style="display: none;">
+                        <i class="fa-solid fa-droplet"></i>
+                    </div>
+                </div>
+                
+                <div class="org-details">
+                    <h2>PIO DURAN WATER SUPPLY SYSTEM</h2>
+                    <h3>Monitoring & Billing System</h3>
+                    <p><i class="fa-solid fa-location-dot" style="margin-right: 4px; color: var(--primary);"></i> Pioduran, Albay</p>
+                </div>
             </div>
+            
             <div class="report-meta">
                 <h1 class="report-title">Unpaid Accounts Report</h1>
+
                 <div class="report-date">
-                    Report Generated: <span class="font-semibold">{% now "F d, Y" %}</span>
+                    Billing Coverage:
+                    <span class="font-semibold">
+                        {% if billings %}
+                            {{ billings.0.billing_month|date:"F Y" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="report-date">
+                    Report Generated:
+                    <span class="font-semibold">{% now "F d, Y" %}</span>
                 </div>
             </div>
         </div>
@@ -62,10 +88,10 @@
                     <tr>
                         <td class="center font-semibold text-muted">{{ forloop.counter }}</td>
                         <td class="font-semibold font-mono">{{ billing.customer.submitter_no }}</td>
-                        <td class="font-semibold">{{ billing.customer.fullname }}</td>
+                        <td class="font-semibold">{{ billing.customer.firstname }} {{ billing.customer.lastname }}</td>
                         <td>{{ billing.customer.address }}</td>
                         <td class="right font-mono">{{ billing.consumption }} m³</td>
-                        <td class="right font-semibold font-mono color-red">₱{{ billing.total_amount }}</td>
+                        <td class="right font-semibold font-mono color-black">₱{{ billing.total_amount }}</td>
                         <td class="center">
                             <span class="status-badge">Unpaid</span>
                         </td>
@@ -103,13 +129,13 @@
 
 <style>
     :root {
-        --primary: #dc2626; /* Warning/Unpaid red scheme for the printed document */
-        --primary-light: #fef2f2;
+        --primary: #0f172a; /* Professional Dark Slate/Black palette */
+        --primary-light: #f1f5f9;
         --text-dark: #1e293b;
         --text-muted: #64748b;
         --border-color: #cbd5e1;
-        --danger: #b91c1c;
-        --danger-bg: #fee2e2;
+        --dark-badge: #334155;
+        --dark-badge-bg: #e2e8f0;
     }
 
     /* Embedded Report Frame within Dashboard Panel */
@@ -149,8 +175,8 @@
     }
 
     .btn-print:hover {
-        background: #b91c1c;
-        border-color: #b91c1c;
+        background: #1e293b;
+        border-color: #1e293b;
     }
 
     /* Header Layout */
@@ -161,6 +187,41 @@
         margin-bottom: 35px;
         border-bottom: 2px solid var(--primary);
         padding-bottom: 20px;
+    }
+
+    .header-brand-group {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    /* Logo Housing Frame */
+    .report-logo-wrapper {
+        width: 64px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .report-logo-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .logo-fallback-box {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background-color: var(--primary-light);
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        border: 1px dashed var(--primary);
     }
 
     .org-details h2 {
@@ -247,7 +308,7 @@
     .center { text-align: center; }
     .font-mono { font-family: monospace; font-size: 13px; }
     .font-semibold { font-weight: 600; }
-    .color-red { color: var(--danger); }
+    .color-black { color: #000000; }
 
     /* Status Badge */
     .status-badge {
@@ -255,8 +316,8 @@
         padding: 4px 8px;
         font-size: 11px;
         font-weight: 700;
-        color: var(--danger);
-        background-color: var(--danger-bg);
+        color: var(--dark-badge);
+        background-color: var(--dark-badge-bg);
         border-radius: 4px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -336,7 +397,7 @@
         }
 
         th {
-            background-color: #dc2626 !important;
+            background-color: #0f172a !important;
             color: #ffffff !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
@@ -349,9 +410,16 @@
         }
 
         .status-badge {
-            background-color: #fee2e2 !important;
-            color: #b91c1c !important;
-            border: 1px solid #fecaca;
+            background-color: #e2e8f0 !important;
+            color: #334155 !important;
+            border: 1px solid #cbd5e1;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .logo-fallback-box {
+            background-color: #f1f5f9 !important;
+            color: #0f172a !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }

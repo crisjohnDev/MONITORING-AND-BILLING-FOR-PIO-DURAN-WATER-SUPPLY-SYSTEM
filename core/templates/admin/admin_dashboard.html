@@ -47,26 +47,27 @@
             </div>
 
             <!-- Barangay Consumption Metrics Dashboard Section -->
-            <div class="data-section section-card-wrapper">
-                <div class="section-header">
-                    <h3><i class="fa-solid fa-map-location-dot" style="margin-right: 8px; color: var(--accent-blue, #0284c7);"></i> Barangay Consumption Distribution</h3>
-                </div>
-                
-                <div class="barangay-grid">
-                    {% for item in barangay_consumption %}
+            <div class="barangay-grid">
+                {% for barangay in barangay_consumption %}
                     <div class="barangay-card">
                         <div class="barangay-indicator"></div>
+
                         <div class="barangay-details">
-                            <span class="barangay-name">{{ item.barangay }}</span>
-                            <span class="barangay-value font-semibold">{{ item.total_consumption|floatformat:2 }} m³</span>
+                            <span class="barangay-name">
+                                {{ barangay.barangay_name }}
+                            </span>
+
+                            <span class="barangay-value font-semibold">
+                                {{ barangay.total_consumption|default_if_none:0|floatformat:2 }} m³
+                            </span>
                         </div>
                     </div>
-                    {% empty %}
+                {% empty %}
                     <div class="empty-grid-state">
-                        <i class="fa-solid fa-folder-open"></i> No consumption records discovered across registered units.
+                        <i class="fa-solid fa-folder-open"></i>
+                        No consumption records found.
                     </div>
-                    {% endfor %}
-                </div>
+                {% endfor %}
             </div>
 
             <!-- Main Log / Primary Information Table -->
@@ -93,7 +94,7 @@
                                     {{ bill.customer.submitter_no }}
                                 </td>
                                 <td class="font-semibold">
-                                    {{ bill.customer.fullname }}
+                                    {{ bill.customer.firstname }} {{ bill.customer.lastname}}
                                 </td>
                                 <td>
                                     {{ bill.current_reading }} m³

@@ -1,10 +1,13 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pio Duran Water Supply System - Admin Portal</title>
-    
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/PWSS.png' %}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/PWSS.png' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/PWSS.png' %}">
     <!-- External Dependencies: Google Fonts & FontAwesome Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Lora:ital,wght@0,400;0,500;1,400&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -57,11 +60,27 @@
             margin-bottom: 35px;
         }
 
-        .crest-icon {
-            color: var(--accent-gold);
-            font-size: 28px;
-            margin-bottom: 12px;
-            display: inline-block;
+        /* Crest Image Container Styling */
+        .crest-container {
+            width: 110px;
+            height: 110px;
+            margin: 0 auto 16px auto;
+            position: relative;
+            border-radius: 50%;
+            {% comment %} border: 2px solid var(--accent-gold); {% endcomment %}
+            padding: 4px;
+            background: #ffffff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .crest-logo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 50%;
         }
 
         .brand-header h1 {
@@ -209,8 +228,9 @@
     <div class="login-card">
         <!-- Traditional Structural Header -->
         <div class="brand-header">
-            <div class="crest-icon">
-                <i class="fa-solid fa-hotel-water"></i>
+            <!-- Modernized Logo Emblem Box -->
+            <div class="crest-container">
+                <img src="{% static "images/PWSS.png" %}" alt="Pio Duran Water Supply Crest" class="crest-logo">
             </div>
             <h1>Pio Duran Water<br>Supply System</h1>
             <p>Administrative Access Terminal</p>
@@ -257,7 +277,6 @@
             const togglePasswordButton = document.getElementById('togglePassword');
             const passwordInput = document.getElementById('password');
             const eyeIcon = document.getElementById('eyeIcon');
-            const portalForm = document.getElementById('adminPortalForm');
 
             // Visibility switcher for access keys
             togglePasswordButton.addEventListener('click', () => {
@@ -272,7 +291,6 @@
                     eyeIcon.classList.add('fa-eye');
                 }
             });
-
         });
     </script>
 </body>

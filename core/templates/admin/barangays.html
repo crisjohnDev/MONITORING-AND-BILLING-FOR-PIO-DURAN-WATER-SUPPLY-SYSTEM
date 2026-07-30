@@ -1,0 +1,218 @@
+{% extends 'admin.html' %}
+
+{% block content %}
+<header class="top-navbar">
+    <div class="page-title">
+        <h1 id="current-view-title">Barangay Geographic Registry</h1>
+    </div>
+    
+    <div class="admin-profile">
+        <div class="admin-info">
+            <small>System Administrator</small>
+        </div>
+        <div class="admin-avatar">AD</div>
+    </div>
+</header>
+
+<div class="workspace">
+    <!-- Action Bar Controls -->
+    <div class="action-bar flex-actions">
+        <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="tableSearch" placeholder="Search region, municipality, or barangay...">
+        </div>
+       
+        <a href="{% url "add-brgy" %}" class="btn-action save-commit" id="navigateAddBarangay">
+            <i class="fa-solid fa-square-plus"></i> Add New Barangay
+        </a>
+    </div>
+
+    <!-- Data Table Container -->
+    <div class="data-section table-container-max">
+        <table class="classic-table" id="barangayTable">
+            <thead>
+                <tr>
+                    <th>Barangay Name</th>
+                    <th>Municipality</th>
+                    <th>Province</th>
+                    <th class="text-center" style="width: 140px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Django template loop structure placeholder -->
+                {% for b in barangays_list %}
+                <tr>
+                    <td><strong>{{ b.barangay_name }}</strong></td>
+                    <td>{{ b.municipality }}</td>
+                    <td>{{ b.province }}</td>
+                    <td class="text-center actions-cell">
+                      
+                        <a href="{% url "edit_brgy" b.pk %}" class="btn-table-action edit-action" title="Edit Entry">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </a>
+                        <a href="?action=delete&id={{ b.id }}" class="btn-table-action delete-action" title="Delete Entry" onclick="return confirm('Are you sure you want to permanently delete this Barangay record?');">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Style Layout Specifications -->
+<style>
+    .flex-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        gap: 16px;
+    }
+
+    .search-box {
+        position: relative;
+        max-width: 360px;
+        width: 100%;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 14px;
+    }
+
+    .search-box input {
+        width: 100%;
+        height: 40px;
+        padding: 8px 12px 8px 42px;
+        font-size: 14px;
+        border: 1px solid var(--border-classic);
+        border-radius: 3px;
+        background-color: #ffffff;
+        outline: none;
+        transition: all 0.15s ease;
+    }
+
+    .search-box input:focus {
+        border-color: #1d4ed8;
+        box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.08);
+    }
+
+    .btn-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 40px;
+        padding: 0 20px;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        border: none;
+        color: #ffffff;
+        text-decoration: none;
+        transition: background-color 0.15s ease;
+    }
+
+    .btn-action.save-commit { background-color: var(--accent-gold); }
+    .btn-action.save-commit:hover { background-color: #9a4305; }
+
+    /* Data Presentation Table Grid System */
+    .table-container-max {
+        background-color: #ffffff;
+        border: 1px solid var(--border-classic);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .classic-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 14px;
+    }
+
+    .classic-table th {
+        background-color: #f8fafc;
+        color: var(--primary-text);
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        padding: 14px 20px;
+        border-bottom: 2px solid var(--border-classic);
+    }
+
+    .classic-table td {
+        padding: 14px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: var(--primary-text);
+    }
+
+    .classic-table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .text-center { text-align: center; }
+
+    /* Action Column Interactive Design */
+    .actions-cell {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+    }
+
+    .btn-table-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 15px;
+        padding: 6px;
+        color: var(--secondary-text);
+        border-radius: 3px;
+        transition: all 0.15s ease;
+    }
+
+    .btn-table-action.edit-action:hover {
+        background-color: #f1f5f9;
+        color: #1d4ed8;
+    }
+
+    .btn-table-action.delete-action:hover {
+        background-color: #fef2f2;
+        color: #dc2626;
+    }
+
+    @media (max-width: 640px) {
+        .flex-actions { flex-direction: column; align-items: stretch; }
+        .search-box { max-width: 100%; }
+    }
+</style>
+
+<!-- Functional Interface Interactivity Scripting -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // --- Real-time Local Table Filter Engine ---
+        const searchInput = document.getElementById("tableSearch");
+        const tableRows = document.querySelectorAll("#barangayTable tbody tr");
+
+        if(searchInput) {
+            searchInput.addEventListener("input", () => {
+                const query = searchInput.value.toLowerCase().trim();
+                tableRows.forEach(row => {
+                    const textContent = row.textContent.toLowerCase();
+                    row.style.display = textContent.includes(query) ? "" : "none";
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

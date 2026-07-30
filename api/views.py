@@ -34,20 +34,35 @@ class CustomerDashboardView(APIView):
 
         customer = request.user.customer_profile
 
-        unpaid = Billing.objects.filter(
-            customer=customer,
-            status="unpaid"
-        ).order_by("-billing_month")
+        unpaid = (
+            Billing.objects
+            .filter(
+                customer=customer,
+                status="unpaid"
+            )
+            .order_by("-billing_month")
+        )
 
-        paid = Billing.objects.filter(
-            customer=customer,
-            status="paid"
-        ).order_by("-billing_month")
+        paid = (
+            Billing.objects
+            .filter(
+                customer=customer,
+                status="paid"
+            )
+            .order_by("-billing_month")
+        )
 
         return Response({
+
             "customer": {
-                "fullname": customer.fullname,
+                "firstname": customer.firstname,
+                "lastname": customer.lastname,
+                "middlename": customer.middlename,
                 "submitter_no": customer.submitter_no,
+                "address": customer.address,
+                "barangay": customer.barangay.barangay_name,
+                "status": customer.status,
+                "is_active": customer.is_active,
             },
 
             "current_bills": [
@@ -55,7 +70,8 @@ class CustomerDashboardView(APIView):
                     "id": bill.id,
                     "period": bill.billing_month.strftime("%B %Y"),
                     "amount": str(bill.total_amount),
-                    "due_date": bill.due_date,
+                    "consumption": str(bill.consumption),
+                    "due_date": bill.due_date.strftime("%Y-%m-%d"),
                     "status": bill.status,
                 }
                 for bill in unpaid
@@ -66,10 +82,11 @@ class CustomerDashboardView(APIView):
                     "id": bill.id,
                     "period": bill.billing_month.strftime("%B %Y"),
                     "amount": str(bill.total_amount),
-                    "paid_date": getattr(
-                        getattr(bill, "payment", None),
-                        "payment_date",
-                        None,
+                    "consumption": str(bill.consumption),
+                    "paid_date": (
+                        bill.payment.payment_date.strftime("%Y-%m-%d")
+                        if hasattr(bill, "payment")
+                        else None
                     ),
                 }
                 for bill in paid
@@ -126,20 +143,22 @@ class CustomerProfileView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
-    # Get logged-in customer profile
     def get(self, request):
 
         customer = request.user.customer_profile
 
         return Response({
             "id": customer.id,
-            "fullname": customer.fullname,
-            "address": customer.address,
-            "status": customer.status,
+            "firstname": customer.firstname,
+            "lastname": customer.lastname,
+            "middlename": customer.middlename,
             "submitter_no": customer.submitter_no,
+            "address": customer.address,
+            "barangay": customer.barangay.barangay_name,
+            "status": customer.status,
+            "is_active": customer.is_active,
         })
 
-    # Create customer profile
     def post(self, request):
 
         serializer = CustomerSerializer(data=request.data)

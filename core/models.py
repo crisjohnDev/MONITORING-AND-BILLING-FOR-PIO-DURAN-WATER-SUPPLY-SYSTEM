@@ -241,3 +241,32 @@ class Notification(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class MeterReading(models.Model):
+
+    customer = models.ForeignKey(
+        Customer,
+        on_delete=models.CASCADE,
+        related_name="meter_readings"
+    )
+
+    billing_month = models.DateField()
+
+    previous_reading = models.DecimalField(
+        max_digits=10,
+        decimal_places=2
+    )
+
+    current_reading = models.DecimalField(
+        max_digits=10,
+        decimal_places=2
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("customer", "billing_month")
+
+    def __str__(self):
+        return f"{self.customer.submitter_no} - {self.billing_month}"

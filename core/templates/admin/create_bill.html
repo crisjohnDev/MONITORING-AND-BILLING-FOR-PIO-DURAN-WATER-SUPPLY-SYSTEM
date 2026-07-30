@@ -17,178 +17,213 @@
 
 <!-- Main Workspace Body Area -->
 <div class="workspace">
-    <div class="form-container-card">
+
+    <!-- STEP 1: Billing Setup Configuration Card -->
+    <div class="form-container-card" id="setup-card">
         <div class="form-card-header">
             <div class="header-left">
-                <div class="icon-badge"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                <div class="icon-badge"><i class="fa-solid fa-sliders"></i></div>
                 <div>
-                    <h3>New Meter Reading & Invoice Entry</h3>
-                    <p class="subtitle">Record current water telemetry data and generate customer billings.</p>
+                    <h3>Billing Setup</h3>
+                    <p class="subtitle">Select the billing period before generating utility statements.</p>
                 </div>
             </div>
-            <a href="{% url 'billing' %}" class="btn-back">
-                <i class="fa-solid fa-arrow-left-long"></i> Back to Ledger
-            </a>
         </div>
+
+        <div class="form-row-dual">
+            <div class="form-group">
+                <label>Billing Coverage Month <span class="required">*</span></label>
+                <input type="month" id="setup_billing_month" class="reading-input" required>
+            </div>
+
+            <div class="form-group">
+                <label>Settlement Due Date <span class="required">*</span></label>
+                <input type="date" id="setup_due_date" class="reading-input" required>
+            </div>
+        </div>
+
+        <div style="margin-top:20px; text-align: right;">
+            <button type="button" class="btn-submit" onclick="enableBillingForm()">
+                Continue <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
         
-        <!-- Core Invoice Generation Form -->
-        <form method="POST" action="" id="billingGenerationForm">
-            {% csrf_token %}
-            
-            <!-- 1. Customer Context Entity Target Locator -->
-            <div class="form-group full-width">
-                <label for="customerSearchInput">Target Consumer Account <span class="required">*</span></label>
-                <div class="custom-combobox-wrapper">
-                    <div class="search-input-container">
-                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                        <input type="text" id="customerSearchInput" placeholder="Type Submitter No. or Name to search registry..." oninput="filterConsumerRegistry()" autocomplete="off">
-                    </div>
+    <!-- STEP 2: Core Invoice & Consumer Ledger Workspace -->
+    <form method="POST" id="main-billing-form" style="display: none; margin-top: 30px;">
+        {% csrf_token %}
 
-                    <!-- Modern Interactive Scroll List -->
-                    <div class="dropdown-scroll-pane">
-                        <select name="customer" id="customer" size="5" required onchange="updatePreviousReading(this)">
-                            <option value="" data-prev="0.00" selected>
-                                -- Select Matched Consumer Target from List Below --
-                            </option>
-                            {% for item in customer_data %}
-                            <option
-                                value="{{ item.customer.id }}"
-                                data-prev="{{ item.previous }}"
-                                {% if item.customer.status == "new" %}disabled{% endif %}
-                            >
-                                {{ item.customer.submitter_no }} — {{ item.customer.fullname }}
+        <!-- Hidden fields for global configurations -->
+        <input type="hidden" name="billing_month" id="hidden_billing_month">
+        <input type="hidden" name="due_date" id="hidden_due_date">
+        <!-- Hidden input holding JSON of all saved consumer records -->
+        <input type="hidden" name="consumer_data_json" id="consumer_data_json">
 
-                                {% if item.customer.status == "new" %}
-                                    (New Applicant)
-                                {% else %}
-                                    (Old Customer)
-                                {% endif %}
-                            </option>
-                            {% endfor %}
-                        </select>
+        <!-- Active Read-Only Summary Banner -->
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="summary-title">Target Period</div>
+                <h4 id="banner_month">--</h4>
+            </div>
+            <div class="summary-card">
+                <div class="summary-title">Due Date</div>
+                <h4 id="banner_due">--</h4>
+            </div>
+            <div class="summary-card" style="border-left: 4px solid var(--bg-navy, #0f1d3a); display: flex; align-items: center; justify-content: center;">
+                <button type="button" class="btn-secondary" onclick="modifySetupConfig()" style="width:100%; padding: 8px;">
+                    <i class="fa-solid fa-pen-to-square"></i> Change Setup
+                </button>
+            </div>
+        </div>
+
+        <div class="form-container-card" style="max-width: 100%; margin-top: 20px;">
+            <div class="form-card-header">
+                <div class="header-left">
+                    <div class="icon-badge"><i class="fa-solid fa-users"></i></div>
+                    <div>
+                        <h3>Consumer Ledger Processing</h3>
+                        <p class="subtitle">Select a consumer to process individual volumetric calculations.</p>
                     </div>
                 </div>
-                <small class="field-help"><i class="fa-solid fa-circle-info"></i> Isolates registry matches instantly as you type.</small>
             </div>
 
-            <!-- Separator Divider Line -->
-            <div class="form-divider"><span>Statement Scheduling</span></div>
-
-            <!-- 2. Statement Period & Due Threshold Configuration -->
             <div class="form-row-dual">
+                <!-- Left Pane: Modern Consumer Status Registry -->
                 <div class="form-group">
-                    <label for="billing_month">Billing Coverage Month <span class="required">*</span></label>
-                    <div class="input-with-icon">
-                        <i class="fa-solid fa-calendar-days input-icon"></i>
-                        <input type="date" name="billing_month" id="billing_month" required value="2026-07-01">
+                    <label>Select Consumer Account</label>
+                    <div class="custom-combobox-wrapper">
+                        <div class="search-input-container">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <input type="text" id="customerSearchInput" placeholder="Search consumer name or account #..." onkeyup="filterConsumerRegistry()">
+                        </div>
+<div class="dropdown-scroll-pane">
+    <div id="customer-list-box" class="custom-select-list">
+
+{% for customer in customer_data %}
+<div
+    class="consumer-option"
+    data-value="{{ customer.id }}"
+    data-prev="{{ customer.previous_reading }}"
+    onclick="selectConsumerRow(this)"
+>
+
+    <span class="name-label">
+        {{ customer.lastname }}, {{ customer.firstname }}
+        {% if customer.middlename %}
+            {{ customer.middlename|slice:":1" }}.
+        {% endif %}
+        (Acc #{{ customer.submitter_no }})
+        -
+        <strong
+            style="color:{% if customer.status == 'new' %}#f59e0b{% else %}#16a34a{% endif %};">
+            {{ customer.status|title }}
+        </strong>
+    </span>
+
+    <span class="status-badge">
+        <i class="fa-solid fa-circle-check"></i>
+    </span>
+
+</div>
+{% empty %}
+<div class="consumer-option">
+    <span class="name-label">
+        No consumers available.
+    </span>
+</div>
+{% endfor %}
+
+    </div>
+</div>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label for="due_date">Settlement Due Date <span class="required">*</span></label>
-                    <div class="input-with-icon">
-                        <i class="fa-solid fa-calendar-check input-icon"></i>
-                        <input type="date" name="due_date" id="due_date" required value="2026-07-15">
+
+                <!-- Right Pane: Entry Parameter Form Panels -->
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label style="font-size: 12px; font-weight: 700; color: #334155; text-transform: uppercase;">Selected Account Input</label>
+                        <span id="input-status-indicator" class="input-indicator-badge">
+                            <i class="fa-solid fa-circle-dot"></i> Unsaved Changes
+                        </span>
+                    </div>
+                    
+                    <div class="form-row-dual">
+                        <div class="form-group">
+                            <label>Previous Reading (m³)</label>
+                            <div class="input-with-icon locked">
+                                <span class="currency-prefix"><i class="fa-solid fa-gauge-simple"></i></span>
+                                <input type="number" step="0.01" id="previous_reading" readonly value="0.00">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Current Reading (m³) <span class="required">*</span></label>
+                            <div class="input-with-icon">
+                                <span class="currency-prefix"><i class="fa-solid fa-gauge"></i></span>
+                                <input type="number" step="0.01" id="current_reading" oninput="calculateLiveBillSummary()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row-triple" style="margin-top: 10px;">
+                        <div class="form-group">
+                            <label class="optional-tag">Connection Fee</label>
+                            <input type="number" step="0.01" id="connection_fee" class="reading-input" value="0.00" oninput="calculateLiveBillSummary()">
+                        </div>
+                        <div class="form-group">
+                            <label class="optional-tag">Reconnection</label>
+                            <input type="number" step="0.01" id="reconnection_fee" class="reading-input" value="0.00" oninput="calculateLiveBillSummary()">
+                        </div>
+                        <div class="form-group">
+                            <label class="optional-tag">Violation Fines</label>
+                            <input type="number" step="0.01" id="violation_fee" class="reading-input" value="0.00" oninput="calculateLiveBillSummary()">
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 15px; text-align: right;">
+                        <button type="button" class="btn-submit" style="background-color: #2563eb;" onclick="commitConsumerEntry()">
+                            <i class="fa-solid fa-square-check"></i> Save Consumer Entry
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Separator Divider Line -->
-            <div class="form-divider"><span>Telemetry & Consumption Metering</span></div>
-
-            <!-- 3. Hardware Reading Telemetry Input Points -->
-            <div class="form-row-dual">
-                <div class="form-group">
-                    <label for="previous_reading">Previous Reading (m³)</label>
-                    <div class="input-with-icon locked">
-                        <i class="fa-solid fa-lock input-icon"></i>
-                        <input type="number" step="0.01" name="previous_reading" id="previous_reading" placeholder="0.00" required readonly>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="current_reading">Current Reading Entry (m³) <span class="required"></span></label>
-                    <div class="input-with-icon">
-                        <i class="fa-solid fa-gauge-high input-icon"></i>
-                        <input type="number" step="0.01" name="current_reading" id="current_reading" placeholder="0.00" oninput="calculateLiveBillSummary()">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Separator Divider Line -->
-            <div class="form-divider"><span>Additional Adjustments & Surcharges</span></div>
-
-            <!-- Optional Surcharge Inputs Row -->
-            <div class="form-row-triple">
-                <div class="form-group">
-                    <label for="connection_fee">Connection Fee <span class="optional-tag">(Optional)</span></label>
-                    <div class="input-with-icon text-addon-container">
-                        <span class="currency-prefix">₱</span>
-                        <input type="number" step="0.01" name="connection_fee" id="connection_fee" placeholder="0.00" class="text-right font-mono" oninput="calculateLiveBillSummary()">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="reconnection_fee">Reconnection Fee <span class="optional-tag">(Optional)</span></label>
-                    <div class="input-with-icon text-addon-container">
-                        <span class="currency-prefix">₱</span>
-                        <input type="number" step="0.01" name="reconnection_fee" id="reconnection_fee" placeholder="0.00" class="text-right font-mono" oninput="calculateLiveBillSummary()">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="violation_fee">Violation Fee <span class="optional-tag">(Optional)</span></label>
-                    <div class="input-with-icon text-addon-container">
-                        <span class="currency-prefix">₱</span>
-                        <input type="number" step="0.01" name="violation_fee" id="violation_fee" placeholder="0.00" class="text-right font-mono" oninput="calculateLiveBillSummary()">
-                    </div>
-                </div>
-            </div>
-
-            <!-- 4. Real-time Calculation Summary Matrix Cards -->
+            <!-- Dynamic Live Calculations Summary Dashboard -->
             <div class="live-calculation-grid">
                 <div class="calc-card">
                     <div class="calc-icon"><i class="fa-solid fa-droplet"></i></div>
                     <div class="calc-info">
-                        <span class="calc-label">Computed Consumption</span>
+                        <span class="calc-label">Calculated Consumption</span>
                         <div class="calc-value"><span id="live_consumption">0.00</span> <small>m³</small></div>
                     </div>
                 </div>
-                <div class="calc-card">
-                    <div class="calc-icon"><i class="fa-solid fa-tag"></i></div>
+                <div class="calc-card total-highlight" style="grid-column: span 2;">
+                    <div class="calc-icon"><i class="fa-solid fa-receipt"></i></div>
                     <div class="calc-info">
-                        <span class="calc-label">Base Variable Rate</span>
-                        <div class="calc-value">₱<span id="live_rate">25.00</span></div>
-                        <input type="hidden" name="rate_per_cubic" id="rate_per_cubic" value="25.00">
-                    </div>
-                </div>
-                <div class="calc-card total-highlight">
-                    <div class="calc-icon"><i class="fa-solid fa-wallet"></i></div>
-                    <div class="calc-info">
-                        <span class="calc-label">Gross Amount Payable</span>
+                        <span class="calc-label">Aggregate Surcharges Total</span>
                         <div class="calc-value">₱<span id="live_total">0.00</span></div>
                     </div>
                 </div>
             </div>
 
-            <!-- 5. Default Workflow Lifecycle State Injection -->
-            <input type="hidden" name="status" value="unpaid">
-
-            <!-- 6. Management Action Control Deck -->
+            <!-- Global Actions Footer Tray -->
             <div class="form-actions-footer">
-                <button type="button" class="btn-secondary" onclick="window.history.back()">Cancel Entry</button>
-                <button type="submit" class="btn-submit">
-                    <i class="fa-solid fa-cloud-arrow-up"></i> Commit & Post Statement
+                <button type="button" class="btn-secondary" onclick="resetLiveCalculations(true)">Clear Current Row</button>
+                <button type="submit" class="btn-submit" onclick="return finalizeSubmission(event)">
+                    <i class="fa-solid fa-print"></i> Generate Statements
                 </button>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
 
-<!-- Refined UI Design Styles System -->
+<!-- Dynamic Interface Control Styles -->
 <style>
-    /* Main Layout Cards Layout */
+    /* Main Layout Framework */
     .form-container-card {
         background: #ffffff;
         border-radius: 8px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-        border: 1px solid var(--border-classic);
+        border: 1px solid var(--border-classic, #e2e8f0);
         max-width: 800px;
         margin: 0 auto;
         padding: 30px;
@@ -198,7 +233,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-bottom: 1px solid var(--border-classic);
+        border-bottom: 1px solid var(--border-classic, #e2e8f0);
         padding-bottom: 20px;
         margin-bottom: 25px;
     }
@@ -213,7 +248,7 @@
         width: 44px;
         height: 44px;
         background-color: rgba(15, 29, 58, 0.05);
-        color: var(--bg-navy);
+        color: var(--bg-navy, #0f1d3a);
         border-radius: 6px;
         display: flex;
         align-items: center;
@@ -224,34 +259,16 @@
     .form-card-header h3 {
         font-size: 18px;
         font-weight: 700;
-        color: var(--bg-navy);
+        color: var(--bg-navy, #0f1d3a);
+        margin: 0;
     }
 
     .form-card-header .subtitle {
         font-size: 13px;
-        color: var(--secondary-text);
-        margin-top: 2px;
+        color: var(--secondary-text, #64748b);
+        margin: 2px 0 0 0;
     }
 
-    .btn-back {
-        font-size: 13px;
-        text-decoration: none;
-        color: var(--secondary-text);
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 12px;
-        border-radius: 4px;
-        transition: all 0.2s;
-    }
-
-    .btn-back:hover {
-        color: var(--bg-navy);
-        background-color: #f1f5f9;
-    }
-
-    /* Section Forms Layout Grids */
     .form-group {
         margin-bottom: 20px;
         display: flex;
@@ -271,47 +288,8 @@
         gap: 20px;
     }
 
-    .form-divider {
-        display: flex;
-        align-items: center;
-        text-align: center;
-        margin: 30px 0 20px 0;
-    }
-
-    .form-divider::before, .form-divider::after {
-        content: '';
-        flex: 1;
-        border-bottom: 1px solid #e2e8f0;
-    }
-
-    .form-divider span {
-        padding: 0 15px;
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: #94a3b8;
-    }
-
-    /* Input Fields Customizations */
-    .form-group label {
-        font-size: 12px;
-        font-weight: 700;
-        color: #334155;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .required {
-        color: #ef4444;
-    }
-
-    .optional-tag {
-        color: #94a3b8;
-        font-size: 11px;
-        text-transform: lowercase;
-        font-weight: 500;
-    }
+    .required { color: #ef4444; }
+    .optional-tag { color: #94a3b8; font-size: 11px; text-transform: uppercase; font-weight: 700; }
 
     .input-with-icon {
         position: relative;
@@ -319,18 +297,12 @@
         align-items: center;
     }
 
-    .input-icon, .currency-prefix {
+    .currency-prefix {
         position: absolute;
         left: 14px;
         color: #94a3b8;
         font-size: 14px;
         pointer-events: none;
-    }
-
-    .currency-prefix {
-        font-family: monospace;
-        font-weight: 700;
-        color: #64748b;
     }
 
     .input-with-icon input {
@@ -340,19 +312,17 @@
         font-size: 14px;
         border: 1px solid #cbd5e1;
         border-radius: 6px;
-        color: var(--primary-text);
-        background-color: #ffffff;
+        color: var(--primary-text, #1e293b);
         box-sizing: border-box;
         transition: all 0.2s;
     }
 
     .input-with-icon input:focus {
         outline: none;
-        border-color: var(--accent-blue);
-        box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     }
 
-    /* Locked Readonly Fields state */
     .input-with-icon.locked input {
         background-color: #f8fafc;
         border-color: #e2e8f0;
@@ -360,24 +330,12 @@
         cursor: not-allowed;
     }
 
-    .field-help {
-        font-size: 12px;
-        color: #64748b;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-
-    .font-mono { font-family: monospace; }
-    .text-right { text-align: right; }
-
-    /* Advanced Combobox Dropdown Interface */
+    /* Modern Scroll Pane & Dynamic Checkmark Selector */
     .custom-combobox-wrapper {
         border: 1px solid #cbd5e1;
         border-radius: 6px;
         background: #ffffff;
         overflow: hidden;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
     }
 
     .search-input-container {
@@ -388,12 +346,7 @@
         background: #f8fafc;
     }
 
-    .search-icon {
-        position: absolute;
-        left: 14px;
-        color: #64748b;
-        font-size: 14px;
-    }
+    .search-icon { position: absolute; left: 14px; color: #64748b; }
 
     #customerSearchInput {
         width: 100%;
@@ -402,46 +355,72 @@
         background: transparent;
         padding: 8px 12px 8px 42px;
         font-size: 14px;
-        color: var(--primary-text);
     }
 
-    #customerSearchInput:focus {
-        outline: none;
-    }
+    #customerSearchInput:focus { outline: none; }
 
     .dropdown-scroll-pane {
+        max-height: 250px;
+        overflow-y: auto;
         padding: 6px;
         background: #ffffff;
     }
 
-    #customer {
-        border: none !important;
-        outline: none !important;
-        background: transparent;
-        font-size: 13px;
-        color: var(--primary-text);
-        width: 100% !important;
-        box-shadow: none !important;
+    .custom-select-list {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
     }
 
-    #customer option {
+    .consumer-option {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         padding: 10px 12px;
         border-radius: 4px;
-        margin-bottom: 2px;
         cursor: pointer;
+        font-size: 13px;
         color: #334155;
+        transition: background 0.2s;
     }
 
-    #customer option:hover {
-        background-color: #f1f5f9 !important;
-    }
+    .consumer-option:hover { background-color: #f1f5f9; }
 
-    #customer option:checked {
-        background: #0f1d3a !important;
+    .consumer-option.selected {
+        background: var(--bg-navy, #0f1d3a) !important;
         color: #ffffff !important;
     }
 
-    /* Modern Pricing Metrics Calculation Dashboard Deck */
+    /* Checkmark State Control Classes */
+    .consumer-option .status-badge {
+        display: none;
+        color: #10b981; /* Dynamic Success Green */
+        font-size: 15px;
+    }
+
+    .consumer-option.selected .status-badge {
+        color: #34d399;
+    }
+
+    .consumer-option.checked-completed .status-badge {
+        display: inline-block;
+    }
+
+    /* Dynamic Row Status Tags */
+    .input-indicator-badge {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 12px;
+        display: none;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .input-indicator-badge.pending { display: inline-flex; background: #fef3c7; color: #d97706; }
+    .input-indicator-badge.saved { display: inline-flex; background: #d1fae5; color: #059669; }
+
+    /* Calculation Panels UI */
     .live-calculation-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -457,7 +436,6 @@
         display: flex;
         align-items: center;
         gap: 14px;
-        transition: all 0.2s;
     }
 
     .calc-card .calc-icon {
@@ -470,209 +448,208 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 16px;
-        flex-shrink: 0;
     }
 
-    .calc-info {
-        display: flex;
-        flex-direction: column;
-    }
+    .calc-card .calc-label { font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; }
+    .calc-card .calc-value { font-size: 18px; font-weight: 700; color: var(--bg-navy, #0f1d3a); font-family: monospace; }
+    .calc-card.total-highlight { background-color: #fff1f2; border-color: #fecdd3; }
+    .calc-card.total-highlight .calc-icon { background: #ffe4e6; color: #e11d48; border-color: #fda4af; }
+    .calc-card.total-highlight .calc-value { color: #e11d48; font-size: 22px; }
 
-    .calc-card .calc-label {
-        font-size: 11px;
-        text-transform: uppercase;
-        font-weight: 700;
-        color: #64748b;
-        letter-spacing: 0.5px;
-    }
+    .form-actions-footer { display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+    .btn-secondary { background: #ffffff; border: 1px solid #cbd5e1; padding: 11px 22px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; }
+    .btn-submit { background: var(--bg-navy, #0f1d3a); color: #ffffff; border: none; padding: 11px 26px; border-radius: 6px; cursor: pointer; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 8px; }
 
-    .calc-card .calc-value {
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--bg-navy);
-        font-family: monospace;
-        margin-top: 2px;
-    }
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; }
+    .summary-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 18px; }
+    .summary-title { font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 700; }
+    .summary-card h4 { margin: 8px 0 0 0; font-size: 20px; font-weight: 700; }
+    .reading-input { width: 100%; height: 42px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
 
-    .calc-card .calc-value small {
-        font-size: 12px;
-        color: #64748b;
-        font-weight: 400;
-    }
-
-    /* Target Payment Card Outlines Alert Highlight */
-    .calc-card.total-highlight {
-        background-color: #fff1f2;
-        border-color: #fecdd3;
-    }
-
-    .calc-card.total-highlight .calc-icon {
-        background: #ffe4e6;
-        color: #e11d48;
-        border-color: #fda4af;
-    }
-
-    .calc-card.total-highlight .calc-label {
-        color: #9f1239;
-    }
-
-    .calc-card.total-highlight .calc-value {
-        color: #e11d48;
-        font-size: 22px;
-    }
-
-    /* Command Actions Footer Tray */
-    .form-actions-footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        border-top: 1px solid var(--border-classic);
-        padding-top: 20px;
-        margin-top: 10px;
-    }
-
-    .btn-secondary {
-        background-color: #ffffff;
-        border: 1px solid #cbd5e1;
-        color: #334155;
-        padding: 11px 22px;
-        font-size: 13px;
-        font-weight: 600;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .btn-secondary:hover {
-        background-color: #f8fafc;
-        border-color: #94a3b8;
-    }
-
-    .btn-submit {
-        background-color: var(--bg-navy);
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        color: #ffffff;
-        padding: 11px 26px;
-        font-size: 13px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-radius: 6px;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.2s;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
-
-    .btn-submit:hover {
-        background-color: #1e3a6d;
-        transform: translateY(-1px);
-    }
-    
-    .btn-submit:active {
-        transform: translateY(0);
-    }
-
-    @media (max-width: 768px) {
-        .form-row-triple {
-            grid-template-columns: 1fr;
-        }
-    }
+    @media (max-width: 768px) { .form-row-triple, .form-row-dual { grid-template-columns: 1fr; } }
 </style>
 
-<!-- Live Telemetry Engine & Dynamic Data Stream Isolation Pipeline -->
+<!-- Data Storage Pipeline & Controller Blueprint -->
 <script>
     let masterRegistryOptions = [];
+    let processedConsumerLedger = {}; // Houses metrics saved per data primary key
+    let currentlyActiveConsumerNode = null;
 
     document.addEventListener("DOMContentLoaded", () => {
-        const selectElement = document.getElementById("customer");
-        const nativeOptions = selectElement.getElementsByTagName("option");
-        
-        for (let i = 0; i < nativeOptions.length; i++) {
+        const optionNodes = document.querySelectorAll(".consumer-option");
+        optionNodes.forEach(node => {
             masterRegistryOptions.push({
-                value: nativeOptions[i].value,
-                text: nativeOptions[i].text,
-                prev: nativeOptions[i].getAttribute("data-prev") || "0.00"
+                element: node,
+                text: node.querySelector(".name-label").innerText.toUpperCase(),
+                value: node.getAttribute("data-value")
             });
-        }
+        });
     });
 
-    function filterConsumerRegistry() {
-        const input = document.getElementById("customerSearchInput");
-        const filter = input.value.toUpperCase();
-        const select = document.getElementById("customer");
+    function enableBillingForm() {
+        const monthInput = document.getElementById("setup_billing_month");
+        const dueDateInput = document.getElementById("setup_due_date");
+
+        if (!monthInput.value || !dueDateInput.value) {
+            alert("Please accurately complete all Setup fields before entering data.");
+            return;
+        }
+
+        document.getElementById("hidden_billing_month").value = monthInput.value;
+        document.getElementById("hidden_due_date").value = dueDateInput.value;
+        document.getElementById("banner_month").innerText = monthInput.value;
+        document.getElementById("banner_due").innerText = dueDateInput.value;
+
+        document.getElementById("setup-card").style.display = "none";
+        document.getElementById("main-billing-form").style.display = "block";
+    }
+
+    function modifySetupConfig() {
+        document.getElementById("main-billing-form").style.display = "none";
+        document.getElementById("setup-card").style.display = "block";
+    }
+
+    // Intercept Row-Selection Actions to populate working variables
+    function selectConsumerRow(element) {
+        document.querySelectorAll(".consumer-option").forEach(el => el.classList.remove("selected"));
+        element.classList.add("selected");
         
-        select.innerHTML = "";
+        currentlyActiveConsumerNode = element;
+        const consumerId = element.getAttribute("data-value");
+        const prevReading = parseFloat(element.getAttribute("data-prev") || 0);
 
-        masterRegistryOptions.forEach(opt => {
-            if (opt.value === "") {
-                if (filter === "") {
-                    appendDataOption(select, opt);
-                }
-                return;
-            }
+        document.getElementById("previous_reading").value = prevReading.toFixed(2);
 
-            if (opt.text.toUpperCase().indexOf(filter) > -1) {
-                appendDataOption(select, opt);
-            }
-        });
-    }
+        // Load existing data if previously committed inside this window instance
+        if (processedConsumerLedger[consumerId]) {
+            const data = processedConsumerLedger[consumerId];
+            document.getElementById("current_reading").value = data.current_reading;
+            document.getElementById("connection_fee").value = data.connection_fee;
+            document.getElementById("reconnection_fee").value = data.reconnection_fee;
+            document.getElementById("violation_fee").value = data.violation_fee;
+            updateStatusIndicator("saved");
+        } else {
+            // Load fresh blank defaults
+            document.getElementById("current_reading").value = "";
+            document.getElementById("connection_fee").value = "0.00";
+            document.getElementById("reconnection_fee").value = "0.00";
+            document.getElementById("violation_fee").value = "0.00";
+            updateStatusIndicator("pending");
+        }
 
-    function appendDataOption(parent, data) {
-        const optEl = document.createElement("option");
-        optEl.value = data.value;
-        optEl.text = data.text;
-        optEl.setAttribute("data-prev", data.prev);
-        parent.appendChild(optEl);
-    }
-
-    function updatePreviousReading(selectElement) {
-        const option = selectElement.options[selectElement.selectedIndex];
-        if (!option || option.value === "") return;
-
-        document.getElementById("previous_reading").value =
-            parseFloat(option.dataset.prev || 0).toFixed(2);
-
-        document.getElementById("current_reading").value = "";
         calculateLiveBillSummary();
+    }
+
+    // Save individual metrics block and append Checkmark
+    function commitConsumerEntry() {
+        if (!currentlyActiveConsumerNode) {
+            alert("Please select a target consumer from the listing column before saving.");
+            return;
+        }
+
+        const consumerId = currentlyActiveConsumerNode.getAttribute("data-value");
+        const prevReading = parseFloat(document.getElementById("previous_reading").value) || 0;
+        const currentReadingStr = document.getElementById("current_reading").value;
+        const currentReading = parseFloat(currentReadingStr) || 0;
+
+        if (!currentReadingStr || currentReading < prevReading) {
+            alert("Please supply a logical, valid Current Volumetric Reading parameter.");
+            return;
+        }
+
+        // Map inputs into memory ledger
+        processedConsumerLedger[consumerId] = {
+            previous_reading: prevReading,
+            current_reading: currentReading,
+            connection_fee: parseFloat(document.getElementById("connection_fee").value) || 0,
+            reconnection_fee: parseFloat(document.getElementById("reconnection_fee").value) || 0,
+            violation_fee: parseFloat(document.getElementById("violation_fee").value) || 0,
+            penalty_fee: 0
+        };
+
+        // Add class that reveals the green checkmark
+        currentlyActiveConsumerNode.classList.add("checked-completed");
+        updateStatusIndicator("saved");
+        alert("Consumer calculations recorded and checked successfully.");
+    }
+
+    function updateStatusIndicator(state) {
+        const indicator = document.getElementById("input-status-indicator");
+        indicator.className = "input-indicator-badge";
+        if (state === "saved") {
+            indicator.classList.add("saved");
+            indicator.innerHTML = '<i class="fa-solid fa-circle-check"></i> Entry Locked';
+        } else {
+            indicator.classList.add("pending");
+            indicator.innerHTML = '<i class="fa-solid fa-circle-dot"></i> Unsaved Changes';
+        }
     }
 
     function calculateLiveBillSummary() {
         const previousReading = parseFloat(document.getElementById('previous_reading').value) || 0;
         const currentReading = parseFloat(document.getElementById('current_reading').value) || 0;
-        const ratePerCubic = parseFloat(document.getElementById('rate_per_cubic').value) || 25.00;
 
-        // Custom Surcharge Fallbacks
         const connectionFee = parseFloat(document.getElementById('connection_fee').value) || 0;
         const reconnectionFee = parseFloat(document.getElementById('reconnection_fee').value) || 0;
         const violationFee = parseFloat(document.getElementById('violation_fee').value) || 0;
 
-        if (currentReading < previousReading) {
-            document.getElementById('current_reading').style.borderColor = '#ef4444';
-            document.getElementById('current_reading').style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
-            resetLiveCalculations();
+        const currentInput = document.getElementById('current_reading');
+
+        if (currentReading > 0 && currentReading < previousReading) {
+            currentInput.style.borderColor = '#ef4444';
+            resetLiveCalculations(false);
             return;
         } else {
-            document.getElementById('current_reading').style.borderColor = '#cbd5e1';
-            document.getElementById('current_reading').style.boxShadow = 'none';
+            currentInput.style.borderColor = '#cbd5e1';
         }
 
-        const consumption = currentReading - previousReading;
-        const usageAmount = consumption * ratePerCubic;
-        
-        // Dynamic aggregate pricing math calculation
-        const totalAmount = usageAmount + connectionFee + reconnectionFee + violationFee;
+        if (currentlyActiveConsumerNode && document.getElementById("input-status-indicator").classList.contains("saved")) {
+            updateStatusIndicator("pending");
+        }
+
+        const consumption = Math.max(0, currentReading - previousReading);
+        const totalSurcharges = connectionFee + reconnectionFee + violationFee;
 
         document.getElementById('live_consumption').innerText = consumption.toFixed(2);
-        document.getElementById('live_total').innerText = totalAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        document.getElementById('live_total').innerText = totalSurcharges.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     }
 
-    function resetLiveCalculations() {
+    function resetLiveCalculations(clearInputs = true) {
+        if (clearInputs) {
+            document.getElementById('current_reading').value = "";
+            document.getElementById('connection_fee').value = "0.00";
+            document.getElementById('reconnection_fee').value = "0.00";
+            document.getElementById('violation_fee').value = "0.00";
+            if(currentlyActiveConsumerNode) {
+                const cid = currentlyActiveConsumerNode.getAttribute("data-value");
+                delete processedConsumerLedger[cid];
+                currentlyActiveConsumerNode.classList.remove("checked-completed");
+                updateStatusIndicator("pending");
+            }
+        }
         document.getElementById('live_consumption').innerText = "0.00";
         document.getElementById('live_total').innerText = "0.00";
+    }
+
+    function filterConsumerRegistry() {
+        const filter = document.getElementById("customerSearchInput").value.toUpperCase();
+        masterRegistryOptions.forEach(opt => {
+            if (opt.text.indexOf(filter) > -1) {
+                opt.element.style.display = "flex";
+            } else {
+                opt.element.style.display = "none";
+            }
+        });
+    }
+
+    // Serialize object records to JSON right before processing POST request back to Django views
+    function finalizeSubmission(event) {
+        if (Object.keys(processedConsumerLedger).length === 0) {
+            alert("Error: You must save entries for at least one consumer before submission.");
+            return false;
+        }
+        document.getElementById("consumer_data_json").value = JSON.stringify(processedConsumerLedger);
+        return true;
     }
 </script>
 {% endblock %}

@@ -24,37 +24,74 @@
 
     <div class="data-section form-container-max">
         <div class="section-header">
-            <h3>Consumer Profile Credentials Setup</h3>
+            <h3>
+                {% if customer %}
+                    Edit Consumer Profile
+                {% else %}
+                    Consumer Profile Credentials Setup
+                {% endif %}
+            </h3>
         </div>
         
-        <form method="POST" class="classic-form">
+        <form method="POST" class="classic-form" id="customerForm">
             {% csrf_token %}
             
             <div class="form-grid">
-                <!-- Full Name Field -->
-                <div class="form-group full-width">
-                    <label for="fullname">Full Name</label>
+                <!-- First Name Field -->
+                <div class="form-group third-width">
+                    <label for="firstname">First Name</label>
                     <div class="input-wrapper">
                         <i class="fa-solid fa-user input-icon"></i>
-                        <input type="text" id="fullname" name="fullname" placeholder="First Name Last Name" required>
+                        <input type="text" id="firstname" name="firstname" placeholder="John" value="{{ customer.firstname|default:'' }}" required>
                     </div>
                 </div>
 
-                <!-- Address Field -->
-                <div class="form-group full-width">
-                    <label for="address">Address</label>
+                <!-- Middle Name Field -->
+                <div class="form-group third-width">
+                    <label for="middlename">Middle Name <span class="optional-label">(Optional)</span></label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-user input-icon"></i>
+                        <input type="text" id="middlename" name="middlename" value="{{ customer.middlename|default:'' }}" placeholder="Doe">
+                    </div>
+                </div>
+
+                <!-- Last Name Field -->
+                <div class="form-group third-width">
+                    <label for="lastname">Last Name</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-user input-icon"></i>
+                        <input type="text" id="lastname" name="lastname" placeholder="Smith" value="{{ customer.lastname|default:'' }}" required>
+                    </div>
+                </div>
+
+                <!-- Select Barangay Dropdown -->
+                <div class="form-group half-width">
+                    <label for="barangay">Select Barangay</label>
                     <div class="input-wrapper">
                         <i class="fa-solid fa-map-location-dot input-icon"></i>
-                        <input type="text" id="address" name="address" placeholder="Purok, Barangay Pio Duran, Albay" required>
+                            <select id="barangay" name="barangay" required>
+                                <option value="" disabled {% if not customer %}selected{% endif %}>
+                                    Select Barangay
+                                </option>
+
+                                {% for barangay in barangays %}
+                                    <option
+                                        value="{{ barangay.id }}"
+                                        {% if customer and customer.barangay.id == barangay.id %}selected{% endif %}
+                                    >
+                                        {{ barangay.barangay_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
                     </div>
                 </div>
 
-                <!-- Submitter No. Field -->
+                <!-- Auto-Generated Submitter No. Field -->
                 <div class="form-group half-width">
-                    <label for="submitter_no">Submitter No.</label>
+                    <label for="submitter_no">Submitter No. <span class="system-label">(Auto-Generated)</span></label>
                     <div class="input-wrapper">
                         <i class="fa-solid fa-id-card input-icon"></i>
-                        <input type="text" id="submitter_no" name="submitter_no" placeholder="EVJ-000000000" required>
+                        <input type="text" id="submitter_no" name="submitter_no" readonly required class="readonly-field" value="{{ customer.submitter_no|default:'' }}">
                     </div>
                 </div>
             </div>
@@ -71,17 +108,34 @@
                 <div class="form-group half-width">
                     <label for="username">Username</label>
                     <div class="input-wrapper">
-                        <i class="fa-solid fa-at input-icon"></i>
-                        <input type="text" id="username" name="username" placeholder="customer_login" required>
+                        <i class="fa-solid fa-at input-icon"></i> 
+                        <input type="text" id="username" name="username" placeholder="customer_login" value="{{ customer.user.username|default:'' }}" required>
                     </div>
                 </div>
 
-                <!-- Password Field -->
+                <!-- Password Field with View/Hide & Constraints -->
                 <div class="form-group half-width">
                     <label for="password">Initial Password</label>
                     <div class="input-wrapper">
                         <i class="fa-solid fa-lock input-icon"></i>
-                        <input type="password" id="password" name="password" placeholder="••••••••" required>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="{% if customer %}Leave blank to keep current password{% else %}••••••••{% endif %}"
+                            
+                        >
+                        <button type="button" class="toggle-password-btn" id="togglePassword">
+                            <i class="fa-regular fa-eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Real-time Password Validation Feedback UI -->
+                    <div class="password-requirements" id="passwordRequirements">
+                        <div class="req-item" id="req-length"><i class="fa-solid fa-circle-xmark"></i> At least 8 characters</div>
+                        <div class="req-item" id="req-uppercase"><i class="fa-solid fa-circle-xmark"></i> At least one capital letter</div>
+                        <div class="req-item" id="req-number"><i class="fa-solid fa-circle-xmark"></i> At least one number</div>
+                        <div class="req-item" id="req-special"><i class="fa-solid fa-circle-xmark"></i> At least one special character (@$!%*?&)</div>
                     </div>
                 </div>
             </div>
@@ -89,7 +143,12 @@
             <div class="form-actions-footer">
                 <a href="{% url 'customers' %}" class="btn-form reset-cancel">Cancel</a>
                 <button type="submit" class="btn-form save-commit">
-                    <i class="fa-solid fa-floppy-disk"></i> Add Customer 
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    {% if customer %}
+                        Update Customer
+                    {% else %}
+                        Add Customer
+                    {% endif %}
                 </button>
             </div>
         </form>
@@ -131,7 +190,7 @@
 
     .form-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(6, 1fr);
         gap: 24px;
     }
 
@@ -141,13 +200,9 @@
         gap: 8px;
     }
 
-    .form-group.full-width {
-        grid-column: span 2;
-    }
-
-    .form-group.half-width {
-        grid-column: span 1;
-    }
+    .form-group.third-width { grid-column: span 2; }
+    .form-group.half-width { grid-column: span 3; }
+    .form-group.full-width { grid-column: span 6; }
 
     .form-group label {
         font-size: 12px;
@@ -157,28 +212,33 @@
         letter-spacing: 0.5px;
     }
 
+    .optional-label, .system-label {
+        font-size: 10px;
+        text-transform: none;
+    }
+    .optional-label { color: var(--secondary-text); font-weight: 400; }
+    .system-label { color: var(--accent-gold); font-weight: 600; }
+
     .input-wrapper {
         position: relative;
         width: 100%;
+        display: flex;
+        align-items: center;
     }
 
     .input-icon {
         position: absolute;
         left: 14px;
-        top: 50%;
-        transform: translateY(-50%);
         color: #94a3b8;
         font-size: 14px;
+        pointer-events: none;
     }
 
-    .input-wrapper input[type="text"],
-    .input-wrapper input[type="email"],
-    .input-wrapper input[type="tel"],
-    .input-wrapper input[type="password"],
+    .input-wrapper input,
     .input-wrapper select {
         width: 100%;
         height: 42px;
-        padding: 8px 12px 8px 42px;
+        padding: 8px 40px 8px 42px;
         font-size: 14px;
         color: var(--primary-text);
         background-color: #ffffff;
@@ -195,28 +255,77 @@
         box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.05);
     }
 
-    /* Style rule overrides to handle select list structures elegantly */
+    /* Password View / Hide Toggle Design */
+    .toggle-password-btn {
+        position: absolute;
+        right: 12px;
+        background: none;
+        border: none;
+        color: #94a3b8;
+        cursor: pointer;
+        font-size: 15px;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .toggle-password-btn:hover {
+        color: var(--primary-text);
+    }
+
+    /* Password Requirements Verification Blocks */
+    .password-requirements {
+        margin-top: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        background-color: #f8fafc;
+        padding: 10px 12px;
+        border-radius: 4px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .req-item {
+        font-size: 11px;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: color 0.2s ease;
+    }
+
+    .req-item i {
+        font-size: 12px;
+    }
+
+    .req-item.valid {
+        color: #16a34a; /* Classic Emerald Green for success */
+    }
+
+    .req-item.valid i {
+        color: #16a34a;
+    }
+
+    .input-wrapper input.readonly-field {
+        background-color: #f8fafc;
+        cursor: not-allowed;
+        font-family: monospace;
+    }
+
     .input-wrapper select {
         appearance: none;
         background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: right 14px center;
         background-size: 14px;
-        padding-right: 40px;
-        cursor: pointer;
     }
 
-    .field-help {
-        font-size: 11px;
-        color: var(--secondary-text);
-        margin-top: -2px;
-    }
-
-    /* Divider styling for visual separation */
     .section-divider {
         border: 0;
         border-top: 1px dashed var(--border-classic);
         margin: 32px 0 24px 0;
+        grid-column: span 6;
     }
 
     .form-actions-footer {
@@ -226,6 +335,7 @@
         display: flex;
         justify-content: flex-end;
         gap: 16px;
+        grid-column: span 6;
     }
 
     .btn-form {
@@ -253,7 +363,6 @@
 
     .btn-form.reset-cancel:hover {
         background-color: #f1f5f9;
-        color: var(--primary-text);
     }
 
     .btn-form.save-commit {
@@ -265,18 +374,87 @@
         background-color: #9a4305;
     }
 
-    /* Form Responsive Breakpoints */
-    @media (max-width: 640px) {
-        .form-grid {
-            grid-template-columns: 1fr;
-            gap: 18px;
-        }
-        .form-group.full-width, .form-group.half-width {
-            grid-column: span 1;
-        }
-        .classic-form {
-            padding: 20px;
-        }
+    @media (max-width: 768px) {
+        .form-grid { grid-template-columns: 1fr; gap: 18px; }
+        .form-group.third-width, .form-group.half-width, .form-group.full-width { grid-column: span 1; }
+        .section-divider, .form-actions-footer { grid-column: span 1; }
     }
 </style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // --- Submitter ID Generation Logic ---
+        const submitterInput = document.getElementById("submitter_no");
+        if (submitterInput && !submitterInput.value) {
+            const date = new Date();
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            
+            const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            let randomSequence = '';
+            for (let i = 0; i < 4; i++) {
+                randomSequence += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            submitterInput.value = `PWSS-${year}${month}${day}-${randomSequence}`;
+        }
+
+        // --- Password Eye Visibility Logic ---
+        const togglePassword = document.getElementById("togglePassword");
+        const passwordInput = document.getElementById("password");
+        const eyeIcon = document.getElementById("eyeIcon");
+
+        togglePassword.addEventListener("click", () => {
+            const isPasswordType = passwordInput.getAttribute("type") === "password";
+            passwordInput.setAttribute("type", isPasswordType ? "text" : "password");
+            
+            if (isPasswordType) {
+                eyeIcon.classList.remove("fa-eye");
+                eyeIcon.classList.add("fa-eye-slash");
+            } else {
+                eyeIcon.classList.remove("fa-eye-slash");
+                eyeIcon.classList.add("fa-eye");
+            }
+        });
+
+        // --- Live Password Validation Restrictions ---
+        const reqLength = document.getElementById("req-length");
+        const reqUppercase = document.getElementById("req-uppercase");
+        const reqNumber = document.getElementById("req-number");
+        const reqSpecial = document.getElementById("req-special");
+        const form = document.getElementById("customerForm");
+
+        function validatePassword() {
+            const val = passwordInput.value;
+            
+            // Rules
+            const hasLength = val.length >= 8;
+            const hasUppercase = /[A-Z]/.test(val);
+            const hasNumber = /[0-9]/.test(val);
+            const hasSpecial = /[@$!%*?&]/.test(val);
+
+            // UI helper function to switch icons and colors
+            const toggleRuleUI = (element, isValid) => {
+                if (isValid) {
+                    element.classList.add("valid");
+                    element.querySelector("i").className = "fa-solid fa-circle-check";
+                } else {
+                    element.classList.remove("valid");
+                    element.querySelector("i").className = "fa-solid fa-circle-xmark";
+                }
+            };
+
+            toggleRuleUI(reqLength, hasLength);
+            toggleRuleUI(reqUppercase, hasUppercase);
+            toggleRuleUI(reqNumber, hasNumber);
+            toggleRuleUI(reqSpecial, hasSpecial);
+
+            return hasLength && hasUppercase && hasNumber && hasSpecial;
+        }
+
+        passwordInput.addEventListener("input", validatePassword);
+
+
+    });
+</script>
 {% endblock %}
