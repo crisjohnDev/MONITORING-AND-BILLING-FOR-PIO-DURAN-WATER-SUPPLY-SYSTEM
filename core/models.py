@@ -270,3 +270,4 @@ class MeterReading(models.Model):
 
     def __str__(self):
         return f"{self.customer.submitter_no} - {self.billing_month}"
+

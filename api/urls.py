@@ -16,4 +16,5 @@ urlpatterns = [
     path("customer/profile/", views.CustomerProfileView.as_view(), name="customer_profile_api"),
     path("customer/notifications/", views.CustomerNotificationAPIView.as_view(), name="customer-notifications"),
     path("customer/notifications/unread-count/", views.NotificationUnreadCountAPIView.as_view(),name="notification-unread-count"),
+    path("customer/feedback/", views.CustomerFeedbackAPIView.as_view(), name="customer-feedback"),
 ]

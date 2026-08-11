@@ -40,7 +40,7 @@
                         <th style="width: 180px;">Barangay</th>
                         <th style="width: 180px;">Subject Matter</th>
                         <th>Message / Concern</th>
-                        <th style="width: 120px;">Status</th>
+                       
                     </tr>
                 </thead>
 
@@ -74,7 +74,7 @@
                             </div>
                         </td>
 
-                        <td style="text-align:center;">
+                        {% comment %} <td style="text-align:center;">
                             {% if item.status == "pending" %}
                                 <span class="badge-status status-warning">
                                     Pending
@@ -88,7 +88,7 @@
                                     Resolved
                                 </span>
                             {% endif %}
-                        </td>
+                        </td> {% endcomment %}
 
                     </tr>
                     {% empty %}

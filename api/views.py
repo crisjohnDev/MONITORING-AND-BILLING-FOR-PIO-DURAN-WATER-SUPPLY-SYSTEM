@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from core.models import Billing, Payment, Notification
+from customer.models import CustomerFeedback
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
@@ -234,3 +235,55 @@ class NotificationUnreadCountAPIView(APIView):
         return Response({
             "count": notifications.count()
         })
+
+class CustomerFeedbackAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        customer = request.user.customer_profile
+
+        subject = request.data.get("subject", "").strip()
+        message = request.data.get("message", "").strip()
+
+        # Validate subject
+        if not subject:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Subject is required."
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate message
+        if not message:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Message is required."
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Create feedback
+        feedback = CustomerFeedback.objects.create(
+            customer=customer,
+            subject=subject,
+            message=message
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message": "Feedback submitted successfully.",
+                "feedback": {
+                    "id": feedback.id,
+                    "subject": feedback.subject,
+                    "message": feedback.message,
+                    "status": feedback.status,
+                    "created_at": feedback.created_at
+                }
+            },
+            status=status.HTTP_201_CREATED
+        )
