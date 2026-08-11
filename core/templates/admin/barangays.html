@@ -50,9 +50,22 @@
                         <a href="{% url "edit_brgy" b.pk %}" class="btn-table-action edit-action" title="Edit Entry">
                             <i class="fa-solid fa-pen-to-square"></i>
                         </a>
-                        <a href="?action=delete&id={{ b.id }}" class="btn-table-action delete-action" title="Delete Entry" onclick="return confirm('Are you sure you want to permanently delete this Barangay record?');">
-                            <i class="fa-solid fa-trash-can"></i>
-                        </a>
+                        <form method="POST"
+                            action="{% url 'delete_brgy' b.pk %}"
+                            style="display: inline;"
+                            onsubmit="return confirm('Are you sure you want to permanently delete this Barangay record?');">
+
+                            {% csrf_token %}
+
+                            <button type="submit"
+                                    class="btn-table-action delete-action"
+                                    title="Delete Entry">
+
+                                <i class="fa-solid fa-trash-can"></i>
+
+                            </button>
+
+                        </form>
                     </td>
                 </tr>
                 {% endfor %}

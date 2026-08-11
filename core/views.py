@@ -1249,6 +1249,28 @@ def edit_brgy(request, pk):
     return render(request, "components/brgy_form.html", {"brgy":brgy})
 
 @login_required
+def delete_brgy(request, pk):
+
+    if request.method != "POST":
+        return redirect("brgy_list")
+
+    brgy = get_object_or_404(
+        Barangay,
+        pk=pk
+    )
+
+    barangay_name = brgy.barangay_name
+
+    brgy.delete()
+
+    messages.success(
+        request,
+        f"{barangay_name} deleted successfully."
+    )
+
+    return redirect("brgy_list")
+
+@login_required
 def disconnect_customer(request, pk):
 
     if request.method == "POST":
