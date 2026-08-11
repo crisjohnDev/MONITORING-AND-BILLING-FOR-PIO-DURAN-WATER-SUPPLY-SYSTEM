@@ -506,8 +506,8 @@
                                 </div>
                                 <ul id="customer-results" class="filter-results-list">
                                     {% for customer in customers %}
-                                        <li class="filter-item" data-id="{{ customer.id }}" data-search="{{ customer.submitter_no }} {{ customer.fullname }}">
-                                            {{ customer.submitter_no }} — {{ customer.fullname }}
+                                        <li class="filter-item" data-id="{{ customer.id }}" data-search="{{ customer.submitter_no }} {{ customer.firstname }} {{ customer.lastname}}">
+                                            {{ customer.submitter_no }} — {{ customer.firstname }} {{ customer.lastname }}
                                         </li>
                                     {% empty %}
                                         <li class="filter-item" data-id="1" data-search="ACC-2026-0001 Juan Dela Cruz">ACC-2026-0001 — Juan Dela Cruz</li>

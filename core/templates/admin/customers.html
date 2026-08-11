@@ -1,735 +1,1561 @@
+```html
 {% extends 'admin.html' %}
 
 {% block content %}
+
 <div class="workspace">
 
+    <!-- =========================================================
+         ACTION BAR
+    ========================================================== -->
     <div class="action-bar">
+
         <div class="management-controls">
+
+            <!-- Add Customer -->
             <a href="{% url 'add-customer' %}" class="btn-control primary">
-                <i class="fa-solid fa-user-plus"></i> Add Customer
+                <i class="fa-solid fa-user-plus"></i>
+                Add Customer
             </a>
-            <button type="button" class="btn-control secondary" id="openUploadBtn" onclick="toggleUploadModal(true)">
-                <i class="fa-solid fa-file-excel"></i> Upload Existing Consumers
+
+            <!-- Upload Existing Consumers -->
+            <button
+                type="button"
+                class="btn-control secondary"
+                id="openUploadBtn"
+                onclick="toggleUploadModal(true)"
+            >
+                <i class="fa-solid fa-file-excel"></i>
+                Upload Existing Consumers
             </button>
+
         </div>
 
-        <div class="search-wrapper">
-            <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input type="text" id="tableSearch" placeholder="Search customer registry records..." onkeyup="filterCustomerTable()">
+
+        <!-- =====================================================
+             FILTERS
+        ====================================================== -->
+        <div class="table-filters">
+
+            <!-- Barangay Filter -->
+            <div class="filter-wrapper">
+
+                <i class="fa-solid fa-map-location-dot filter-icon"></i>
+
+                <select
+                    id="barangayFilter"
+                    onchange="filterCustomerTable()"
+                >
+                    <option value="">All Barangays</option>
+
+                    {% for b in barangays_list %}
+                        <option value="{{ b.barangay_name|lower }}">
+                            {{ b.barangay_name }}
+                        </option>
+                    {% empty %}
+                        <option value="" disabled>
+                            No barangays available
+                        </option>
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <!-- Search -->
+            <div class="search-wrapper">
+
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+
+                <input
+                    type="text"
+                    id="tableSearch"
+                    placeholder="Search customer registry records..."
+                    onkeyup="filterCustomerTable()"
+                >
+
+            </div>
+
+
+            <!-- Clear Filters -->
+            <button
+                type="button"
+                class="btn-clear-filter"
+                onclick="clearCustomerFilters()"
+            >
+                <i class="fa-solid fa-filter-circle-xmark"></i>
+                Clear
+            </button>
+
         </div>
+
     </div>
 
+
+    <!-- =========================================================
+         CUSTOMER TABLE
+    ========================================================== -->
     <div class="data-section">
+
         <div class="section-header">
             <h3>Registered Consumer Information Registry</h3>
         </div>
+
+
         <div class="table-container">
+
             <table class="classic-table" id="customerTable">
+
                 <thead>
                     <tr>
                         <th>Submitter No.</th>
                         <th>Full Name</th>
                         <th>Barangay</th>
                         <th>Status</th>
-                        <th style="text-align: center;">Actions</th>
+                        <th style="text-align: center;">
+                            Actions
+                        </th>
                     </tr>
                 </thead>
+
+
                 <tbody>
+
                     {% for customer in customers %}
+
                     <tr>
-                        <td>{{ customer.submitter_no }}</td>
-                        <td class="font-semibold">{{ customer.firstname }} {{ customer.lastname }}</td>
-                        <td>{{ customer.address }}</td>
-                        <td style="text-align:center;">
+
+                        <!-- Submitter Number -->
+                        <td>
+                            {{ customer.submitter_no }}
+                        </td>
+
+
+                        <!-- Full Name -->
+                        <td class="font-semibold">
+                            {{ customer.firstname }}
+                            {{ customer.lastname }}
+                        </td>
+
+
+                        <!-- Barangay -->
+                        <td>
+                            {{ customer.address }}
+                        </td>
+
+
+                        <!-- Status -->
+                        <td style="text-align: center;">
+
                             {% if customer.is_active %}
+
                                 <span class="status-badge active">
                                     <i class="fa-solid fa-circle"></i>
                                     Active
                                 </span>
+
                             {% else %}
+
                                 <span class="status-badge inactive">
                                     <i class="fa-solid fa-circle"></i>
                                     Disconnected
                                 </span>
+
                             {% endif %}
+
                         </td>
 
-                    <td>
-                        <div class="action-btn-group">
 
-                            <a href="{% url 'customer_profile' customer.id %}" class="btn-action profile">
-                                <i class="fa-solid fa-address-card"></i> View Profile
-                            </a>
+                        <!-- Actions -->
+                        <td>
 
-                            <a href="{% url 'update_customer' customer.id %}" class="btn-action edit">
-                                <i class="fa-solid fa-user-pen"></i> Edit Profile
-                            </a>
+                            <div class="action-btn-group">
 
-                            {% if customer.is_active %}
+                                <!-- View Profile -->
+                                <a
+                                    href="{% url 'customer_profile' customer.id %}"
+                                    class="btn-action profile"
+                                >
+                                    <i class="fa-solid fa-address-card"></i>
+                                    View Profile
+                                </a>
 
-                                <!-- Disconnect -->
+
+                                <!-- Edit Profile -->
+                                <a
+                                    href="{% url 'update_customer' customer.id %}"
+                                    class="btn-action edit"
+                                >
+                                    <i class="fa-solid fa-user-pen"></i>
+                                    Edit Profile
+                                </a>
+
+
+                                {% if customer.is_active %}
+
+                                    <!-- Disconnect -->
+                                    <button
+                                        type="button"
+                                        class="btn-action disconnect"
+                                        onclick="openConfirmationModal(
+                                            'disconnect-form-{{ customer.id }}',
+                                            'Disconnect Consumer',
+                                            'Are you sure you want to disconnect {{ customer.firstname }} {{ customer.lastname }}?'
+                                        )"
+                                    >
+                                        <i class="fa-solid fa-plug-circle-xmark"></i>
+                                        Disconnect
+                                    </button>
+
+
+                                    <form
+                                        id="disconnect-form-{{ customer.id }}"
+                                        method="POST"
+                                        action="{% url 'disconnect_customer' customer.id %}"
+                                        style="display: none;"
+                                    >
+                                        {% csrf_token %}
+                                    </form>
+
+
+                                {% else %}
+
+                                    <!-- Reconnect -->
+                                    <button
+                                        type="button"
+                                        class="btn-action reconnect"
+                                        onclick="openConfirmationModal(
+                                            'reconnect-form-{{ customer.id }}',
+                                            'Reconnect Consumer',
+                                            'Reconnect {{ customer.firstname }} {{ customer.lastname }} to the water service?'
+                                        )"
+                                    >
+                                        <i class="fa-solid fa-plug-circle-check"></i>
+                                        Reconnect
+                                    </button>
+
+
+                                    <form
+                                        id="reconnect-form-{{ customer.id }}"
+                                        method="POST"
+                                        action="{% url 'reconnect_customer' customer.id %}"
+                                        style="display: none;"
+                                    >
+                                        {% csrf_token %}
+                                    </form>
+
+                                {% endif %}
+
+
+                                <!-- Delete -->
                                 <button
                                     type="button"
-                                    class="btn-action disconnect"
+                                    class="btn-action delete"
                                     onclick="openConfirmationModal(
-                                        'disconnect-form-{{ customer.id }}',
-                                        'Disconnect Consumer',
-                                        'Are you sure you want to disconnect {{ customer.firstname }} {{ customer.lastname }}?'
+                                        'delete-form-{{ customer.id }}',
+                                        'Delete Record',
+                                        'Are you sure you want to permanently delete {{ customer.firstname }} {{ customer.lastname }}?'
                                     )"
                                 >
-                                    <i class="fa-solid fa-plug-circle-xmark"></i>
-                                    Disconnect
+                                    <i class="fa-solid fa-trash-can"></i>
+                                    Delete
                                 </button>
 
+
                                 <form
-                                    id="disconnect-form-{{ customer.id }}"
+                                    id="delete-form-{{ customer.id }}"
                                     method="POST"
-                                    action="{% url 'disconnect_customer' customer.id %}"
-                                    style="display:none;"
+                                    action="{% url 'delete_customer' customer.id %}"
+                                    style="display: none;"
                                 >
                                     {% csrf_token %}
                                 </form>
 
-                            {% else %}
+                            </div>
 
-                                <!-- Reconnect -->
-                                <button
-                                    type="button"
-                                    class="btn-action reconnect"
-                                    onclick="openConfirmationModal(
-                                        'reconnect-form-{{ customer.id }}',
-                                        'Reconnect Consumer',
-                                        'Reconnect {{ customer.firstname }} {{ customer.lastname }} to the water service?'
-                                    )"
-                                >
-                                    <i class="fa-solid fa-plug-circle-check"></i>
-                                    Reconnect
-                                </button>
+                        </td>
 
-                                <form
-                                    id="reconnect-form-{{ customer.id }}"
-                                    method="POST"
-                                    action="{% url 'reconnect_customer' customer.id %}"
-                                    style="display:none;"
-                                >
-                                    {% csrf_token %}
-                                </form>
-
-                            {% endif %}
-
-                            <!-- Delete -->
-                            <button
-                                type="button"
-                                class="btn-action delete"
-                                onclick="openConfirmationModal(
-                                    'delete-form-{{ customer.id }}',
-                                    'Delete Record',
-                                    'Are you sure you want to permanently delete {{ customer.firstname }} {{ customer.lastname }}?'
-                                )"
-                            >
-                                <i class="fa-solid fa-trash-can"></i>
-                                Delete
-                            </button>
-
-                            <form
-                                id="delete-form-{{ customer.id }}"
-                                method="POST"
-                                action="{% url 'delete_customer' customer.id %}"
-                                style="display:none;"
-                            >
-                                {% csrf_token %}
-                            </form>
-
-                        </div>
-                    </td>
                     </tr>
+
+
                     {% empty %}
+
                     <tr>
-                        <td colspan="4" style="text-align:center;">
-                            No active customers found.
+
+                        <td
+                            colspan="5"
+                            style="text-align: center;"
+                        >
+                            No customers found.
                         </td>
+
                     </tr>
+
                     {% endfor %}
+
                 </tbody>
+
             </table>
+
         </div>
+
     </div>
+
 </div>
 
-<!-- Upload Modal Matrix Window -->
-<div id="uploadModal" class="modal-overlay" style="display: none;">
+
+<!-- =============================================================
+     UPLOAD MODAL
+============================================================== -->
+
+<div
+    id="uploadModal"
+    class="modal-overlay"
+    style="display: none;"
+>
+
     <div class="classic-modal">
+
+        <!-- Modal Header -->
         <div class="modal-header">
-            <h3><i class="fa-solid fa-file-excel" style="color: #15803d; margin-right: 8px;"></i> Import Customers Matrix</h3>
-            <button type="button" class="close-modal-btn" id="closeModalCross" onclick="toggleUploadModal(false)">&times;</button>
+
+            <h3>
+                <i
+                    class="fa-solid fa-file-excel"
+                    style="color: #15803d; margin-right: 8px;"
+                ></i>
+
+                Import Customers Matrix
+            </h3>
+
+
+            <button
+                type="button"
+                class="close-modal-btn"
+                id="closeModalCross"
+                onclick="toggleUploadModal(false)"
+            >
+                &times;
+            </button>
+
         </div>
-        <form method="POST" action="{% url 'import_customers' %}" enctype="multipart/form-data" id="excelUploadForm" onsubmit="handleFormSubmit(event)">
+
+
+        <!-- Upload Form -->
+        <form
+            method="POST"
+            action="{% url 'import_customers' %}"
+            enctype="multipart/form-data"
+            id="excelUploadForm"
+            onsubmit="handleFormSubmit(event)"
+        >
+
             {% csrf_token %}
+
+
             <div class="modal-body">
-                <p>Select target destination allocation parameters along with spreadsheet matrix file (`.xlsx`, `.xls`).</p>
-                
+
+                <p>
+                    Select target destination allocation parameters
+                    along with spreadsheet matrix file
+                    (<code>.xlsx</code>, <code>.xls</code>).
+                </p>
+
+
+                <!-- Barangay -->
                 <div class="modal-form-group">
-                    <label for="modalBarangaySelect">Target Allocation Barangay</label>
+
+                    <label for="modalBarangaySelect">
+                        Target Allocation Barangay
+                    </label>
+
+
                     <div class="select-wrapper">
-                        <i class="fa-solid fa-map-location-dot select-icon"></i>
-                        <select id="modalBarangaySelect" name="barangay_id" required>
-                            <option value="" disabled selected>Choose target Barangay for import...</option>
+
+                        <i
+                            class="fa-solid fa-map-location-dot select-icon"
+                        ></i>
+
+
+                        <select
+                            id="modalBarangaySelect"
+                            name="barangay_id"
+                            required
+                        >
+
+                            <option
+                                value=""
+                                disabled
+                                selected
+                            >
+                                Choose target Barangay for import...
+                            </option>
+
+
                             {% for b in barangays_list %}
-                                <option value="{{ b.id }}">{{ b.barangay_name }} ({{ b.municipality }})</option>
+
+                                <option value="{{ b.id }}">
+                                    {{ b.barangay_name }}
+                                    ({{ b.municipality }})
+                                </option>
+
                             {% empty %}
-                                <option disabled>No barangays available</option>
+
+                                <option disabled>
+                                    No barangays available
+                                </option>
+
                             {% endfor %}
+
                         </select>
+
                     </div>
+
                 </div>
 
-                <div class="file-drop-area" id="dropZoneContainer">
-                    <input type="file" name="excel_file" id="excelFileInput" accept=".xlsx, .xls" required onchange="handleFileSelection(this)">
-                    <label for="excelFileInput" id="fileInputLabel">
-                        <i class="fa-solid fa-cloud-arrow-up" id="uploadIcon"></i>
-                        <span id="fileLabelText">Choose file or drag here</span>
+
+                <!-- File Upload -->
+                <div
+                    class="file-drop-area"
+                    id="dropZoneContainer"
+                >
+
+                    <input
+                        type="file"
+                        name="excel_file"
+                        id="excelFileInput"
+                        accept=".xlsx,.xls"
+                        required
+                        onchange="handleFileSelection(this)"
+                    >
+
+
+                    <label
+                        for="excelFileInput"
+                        id="fileInputLabel"
+                    >
+
+                        <i
+                            class="fa-solid fa-cloud-arrow-up"
+                            id="uploadIcon"
+                        ></i>
+
+
+                        <span id="fileLabelText">
+                            Choose file or drag here
+                        </span>
+
                     </label>
+
                 </div>
+
             </div>
+
+
+            <!-- Modal Footer -->
             <div class="modal-footer">
-                <button type="button" class="btn-action cancel" id="cancelModalBtn" onclick="toggleUploadModal(false)">Cancel</button>
-                <button type="submit" class="btn-action confirm-upload" id="submitModalBtn">
-                    <i class="fa-solid fa-upload" id="submitIcon"></i> <span id="submitText">Upload File</span>
+
+                <button
+                    type="button"
+                    class="btn-action cancel"
+                    id="cancelModalBtn"
+                    onclick="toggleUploadModal(false)"
+                >
+                    Cancel
                 </button>
+
+
+                <button
+                    type="submit"
+                    class="btn-action confirm-upload"
+                    id="submitModalBtn"
+                >
+
+                    <i
+                        class="fa-solid fa-upload"
+                        id="submitIcon"
+                    ></i>
+
+                    <span id="submitText">
+                        Upload File
+                    </span>
+
+                </button>
+
             </div>
+
         </form>
+
     </div>
+
 </div>
 
-<!-- Reusable Shared Action Confirmation Modal Window using native HTML Dialog -->
-<dialog id="actionConfirmModal" class="confirm-dialog-overlay">
+
+<!-- =============================================================
+     CONFIRMATION DIALOG
+============================================================== -->
+
+<dialog
+    id="actionConfirmModal"
+    class="confirm-dialog-overlay"
+>
+
     <div class="classic-modal confirmation-variant">
+
         <div class="modal-header">
-            <h3 id="confirmModalTitle">Confirm System Action</h3>
-            <button type="button" class="close-modal-btn" onclick="closeConfirmationModal()">&times;</button>
+
+            <h3 id="confirmModalTitle">
+                Confirm System Action
+            </h3>
+
+
+            <button
+                type="button"
+                class="close-modal-btn"
+                onclick="closeConfirmationModal()"
+            >
+                &times;
+            </button>
+
         </div>
+
+
         <div class="modal-body">
-            <p id="confirmModalMessage">Are you sure you want to perform this administrative operation?</p>
+
+            <p id="confirmModalMessage">
+                Are you sure you want to perform this administrative operation?
+            </p>
+
         </div>
+
+
         <div class="modal-footer">
-            <button type="button" class="btn-action cancel" onclick="closeConfirmationModal()">Cancel Process</button>
-            <button type="button" id="confirmModalSubmitBtn" class="btn-action">Proceed Action</button>
+
+            <button
+                type="button"
+                class="btn-action cancel"
+                onclick="closeConfirmationModal()"
+            >
+                Cancel Process
+            </button>
+
+
+            <button
+                type="button"
+                id="confirmModalSubmitBtn"
+                class="btn-action"
+            >
+                Proceed Action
+            </button>
+
         </div>
+
     </div>
+
 </dialog>
 
+
+<!-- =============================================================
+     CSS
+============================================================== -->
+
 <style>
-.status-badge{
-    display:inline-flex;
-    align-items:center;
-    gap:6px;
-    padding:6px 12px;
-    border-radius:20px;
-    font-size:12px;
-    font-weight:600;
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
 }
 
-.status-badge.active{
-    background:#dcfce7;
-    color:#166534;
+.status-badge.active {
+    background: #dcfce7;
+    color: #166534;
 }
 
-.status-badge.inactive{
-    background:#fee2e2;
-    color:#991b1b;
+.status-badge.inactive {
+    background: #fee2e2;
+    color: #991b1b;
 }
 
-.btn-action.reconnect{
-    background:#16a34a;
-    color:#fff;
+
+/* =========================================================
+   RECONNECT BUTTON
+========================================================= */
+
+.btn-action.reconnect {
+    background: #16a34a;
+    color: #fff;
+    border: 1px solid #16a34a;
 }
 
-.btn-action.reconnect:hover{
-    background:#15803d;
+.btn-action.reconnect:hover {
+    background: #15803d;
+    border-color: #15803d;
 }
+
+
+/* =========================================================
+   ACTION BAR
+========================================================= */
+
+.action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: -6px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.management-controls {
+    display: flex;
+    gap: 12px;
+}
+
+
+/* =========================================================
+   TOP CONTROL BUTTONS
+========================================================= */
+
+.btn-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-control.primary {
+    background-color: var(--accent-gold);
+    color: #ffffff;
+    border: 1px solid var(--accent-gold);
+}
+
+.btn-control.primary:hover {
+    background-color: #9a4305;
+    border-color: #9a4305;
+}
+
+.btn-control.secondary {
+    background-color: #ffffff;
+    color: var(--bg-navy);
+    border: 1px solid var(--border-classic);
+}
+
+.btn-control.secondary:hover {
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+
+/* =========================================================
+   TABLE FILTERS
+========================================================= */
+
+.table-filters {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+
+/* Barangay Filter */
+
+.filter-wrapper {
+    position: relative;
+    width: 210px;
+}
+
+.filter-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 13px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.filter-wrapper select {
+    width: 100%;
+    height: 36px;
+    padding: 8px 32px 8px 36px;
+    font-size: 13px;
+    color: var(--primary-text);
+    background-color: #ffffff;
+    border: 1px solid var(--border-classic);
+    border-radius: 3px;
+    box-sizing: border-box;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+    cursor: pointer;
+}
+
+.filter-wrapper select:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+}
+
+.filter-wrapper select:hover {
+    border-color: #cbd5e1;
+}
+
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+.search-wrapper {
+    position: relative;
+    width: 300px;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+.search-wrapper input[type="text"] {
+    width: 100%;
+    height: 36px;
+    padding: 8px 12px 8px 36px;
+    font-size: 13px;
+    color: var(--primary-text);
+    background-color: #ffffff;
+    border: 1px solid var(--border-classic);
+    border-radius: 3px;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease;
+}
+
+.search-wrapper input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+}
+
+
+/* =========================================================
+   CLEAR FILTER BUTTON
+========================================================= */
+
+.btn-clear-filter {
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid var(--border-classic);
+    background: #ffffff;
+    color: var(--secondary-text);
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+}
+
+.btn-clear-filter:hover {
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+    color: var(--bg-navy);
+}
+
+
+/* =========================================================
+   TABLE
+========================================================= */
+
+.font-semibold {
+    font-weight: 600;
+    color: var(--bg-navy);
+}
+
+.action-btn-group {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-action {
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 3px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    text-decoration: none;
+    box-sizing: border-box;
+}
+
+
+/* =========================================================
+   ACTION BUTTON COLORS
+========================================================= */
+
+.btn-action.profile {
+    background-color: #ffffff;
+    border: 1px solid var(--accent-blue);
+    color: var(--accent-blue);
+}
+
+.btn-action.profile:hover {
+    background-color: var(--accent-blue);
+    color: #ffffff;
+}
+
+
+.btn-action.edit {
+    background-color: #ffffff;
+    border: 1px solid var(--accent-gold);
+    color: var(--accent-gold);
+}
+
+.btn-action.edit:hover {
+    background-color: var(--accent-gold);
+    color: #ffffff;
+}
+
+
+.btn-action.disconnect {
+    background-color: #ffffff;
+    border: 1px solid #f97316;
+    color: #f97316;
+}
+
+.btn-action.disconnect:hover {
+    background-color: #f97316;
+    color: #ffffff;
+}
+
+
+.btn-action.delete {
+    background-color: #ffffff;
+    border: 1px solid #dc2626;
+    color: #dc2626;
+}
+
+.btn-action.delete:hover {
+    background-color: #dc2626;
+    color: #ffffff;
+}
+
+
+/* =========================================================
+   MODALS
+========================================================= */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(15, 29, 58, 0.4);
+    backdrop-filter: blur(2px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+/* Native Dialog */
+
+.confirm-dialog-overlay {
+    border: none;
+    padding: 0;
+    background: transparent;
+    z-index: 110;
+    max-width: 100vw;
+    max-height: 100vh;
+}
+
+.confirm-dialog-overlay[open] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    margin: auto;
+}
+
+.confirm-dialog-overlay::backdrop {
+    background-color: rgba(15, 29, 58, 0.4);
+    backdrop-filter: blur(2px);
+}
+
+
+/* =========================================================
+   CLASSIC MODAL
+========================================================= */
+
+.classic-modal {
+    background-color: #ffffff;
+    width: 100%;
+    max-width: 480px;
+    border-radius: 4px;
+    border: 1px solid var(--border-classic);
+    box-shadow:
+        0 20px 25px -5px rgba(0,0,0,0.1),
+        0 10px 10px -5px rgba(0,0,0,0.04);
+    overflow: hidden;
+}
+
+.confirmation-variant {
+    width: 420px;
+    max-width: 90vw;
+}
+
+
+/* =========================================================
+   MODAL HEADER
+========================================================= */
+
+.modal-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border-classic);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #f8fafc;
+}
+
+.modal-header h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--bg-navy);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.close-modal-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--secondary-text);
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   MODAL BODY
+========================================================= */
+
+.modal-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.modal-body p {
+    font-size: 13px;
+    color: var(--secondary-text);
+    margin-bottom: 4px;
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   MODAL FORM
+========================================================= */
+
+.modal-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.modal-form-group label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--bg-navy);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+
+/* Select */
+
+.select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.select-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 13px;
+    pointer-events: none;
+}
+
+.select-wrapper select {
+    width: 100%;
+    height: 38px;
+    padding: 6px 36px;
+    font-size: 13px;
+    color: var(--primary-text);
+    background-color: #ffffff;
+    border: 1px solid var(--border-classic);
+    border-radius: 3px;
+    appearance: none;
+
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+    cursor: pointer;
+}
+
+.select-wrapper select:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+}
+
+
+/* =========================================================
+   FILE DROP
+========================================================= */
+
+.file-drop-area {
+    border: 2px dashed var(--border-classic);
+    border-radius: 4px;
+    padding: 30px 20px;
+    text-align: center;
+    position: relative;
+    background-color: #f8fafc;
+}
+
+.file-drop-area:hover {
+    border-color: var(--accent-blue);
+    background-color: #f1f5f9;
+}
+
+.file-drop-area.file-staged {
+    border-color: #16a34a;
+    background-color: #f0fdf4;
+}
+
+.file-drop-area input[type="file"] {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.file-drop-area i {
+    font-size: 28px;
+    color: #94a3b8;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.file-drop-area.file-staged i {
+    color: #16a34a;
+}
+
+.file-drop-area span {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--primary-text);
+    word-break: break-all;
+}
+
+
+/* =========================================================
+   MODAL FOOTER
+========================================================= */
+
+.modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-classic);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    background-color: #f8fafc;
+}
+
+.btn-action.cancel {
+    background: none;
+    border: 1px solid var(--border-classic);
+    color: var(--secondary-text);
+}
+
+.btn-action.cancel:hover {
+    background-color: #f1f5f9;
+}
+
+.btn-action.confirm-upload {
+    background-color: var(--bg-navy);
+    border: 1px solid var(--bg-navy);
+    color: #ffffff;
+}
+
+.btn-action.confirm-upload:hover {
+    background-color: var(--sidebar-bg);
+}
+
+
+/* Disabled */
+
+.btn-action:disabled,
+.close-modal-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed !important;
+    pointer-events: none;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 900px) {
 
     .action-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: -6px;
-        flex-wrap: wrap;
-        gap: 16px;
+        align-items: stretch;
     }
 
     .management-controls {
-        display: flex;
-        gap: 12px;
+        width: 100%;
     }
 
-    .btn-control {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        height: 36px;
-        padding: 0 16px;
-        font-size: 13px;
-        font-weight: 600;
-        border-radius: 3px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        text-decoration: none;
-        cursor: pointer;
-        transition: all 0.15s ease;
+    .table-filters {
+        width: 100%;
     }
 
-    .btn-control.primary {
-        background-color: var(--accent-gold);
-        color: #ffffff;
-        border: 1px solid var(--accent-gold);
-    }
-
-    .btn-control.primary:hover {
-        background-color: #9a4305;
-        border-color: #9a4305;
-    }
-
-    .btn-control.secondary {
-        background-color: #ffffff;
-        color: var(--bg-navy);
-        border: 1px solid var(--border-classic);
-    }
-
-    .btn-control.secondary:hover {
-        background-color: #f8fafc;
-        border-color: #cbd5e1;
+    .filter-wrapper {
+        flex: 1;
+        min-width: 180px;
     }
 
     .search-wrapper {
-        position: relative;
-        width: 300px;
+        flex: 1;
+        min-width: 220px;
     }
 
-    .search-icon {
-        position: absolute;
-        left: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #94a3b8;
-        font-size: 13px;
-    }
+}
 
-    .search-wrapper input[type="text"] {
-        width: 100%;
-        height: 36px;
-        padding: 8px 12px 8px 36px;
-        font-size: 13px;
-        color: var(--primary-text);
-        background-color: #ffffff;
-        border: 1px solid var(--border-classic);
-        border-radius: 3px;
-        box-sizing: border-box;
-        transition: border-color 0.15s ease;
-    }
 
-    .search-wrapper input[type="text"]:focus {
-        outline: none;
-        border-color: var(--accent-blue);
-    }
+@media (max-width: 600px) {
 
-    .font-semibold {
-        font-weight: 600;
-        color: var(--bg-navy);
-    }
-
-    .action-btn-group {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .btn-action {
-        padding: 6px 12px;
-        font-size: 12px;
-        font-weight: 600;
-        border-radius: 3px;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        transition: all 0.15s ease;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-        text-decoration: none;
-        box-sizing: border-box;
-    }
-
-    .btn-action.profile {
-        background-color: #ffffff;
-        border: 1px solid var(--accent-blue);
-        color: var(--accent-blue);
-    }
-
-    .btn-action.profile:hover {
-        background-color: var(--accent-blue);
-        color: #ffffff;
-    }
-
-    .btn-action.edit {
-        background-color: #ffffff;
-        border: 1px solid var(--accent-gold);
-        color: var(--accent-gold);
-    }
-
-    .btn-action.edit:hover {
-        background-color: var(--accent-gold);
-        color: #ffffff;
-    }
-
-    .btn-action.disconnect {
-        background-color: #ffffff;
-        border: 1px solid #f97316;
-        color: #f97316;
-    }
-
-    .btn-action.disconnect:hover {
-        background-color: #f97316;
-        color: #ffffff;
-    }
-
-    .btn-action.delete {
-        background-color: #ffffff;
-        border: 1px solid #dc2626;
-        color: #dc2626;
-    }
-
-    .btn-action.delete:hover {
-        background-color: #dc2626;
-        color: #ffffff;
-    }
-
-    /* Modals & Dialog Structural Elements */
-    .modal-overlay {
-        position: fixed;
-        top: 0; left: 0;
-        width: 100vw; height: 100vh;
-        background-color: rgba(15, 29, 58, 0.4);
-        backdrop-filter: blur(2px);
-        z-index: 100;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    /* Perfect Centering Layout for the Native Dialog */
-    .confirm-dialog-overlay {
-        border: none;
-        padding: 0;
-        background: transparent;
-        z-index: 110;
-        max-width: 100vw;
-        max-height: 100vh;
-    }
-
-    /* Fixed default browser centering bug rules */
-    .confirm-dialog-overlay[open] {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: fixed;
-        top: 0; right: 0; bottom: 0; left: 0;
-        margin: auto;
-    }
-
-    .confirm-dialog-overlay::backdrop {
-        background-color: rgba(15, 29, 58, 0.4);
-        backdrop-filter: blur(2px);
-    }
-
-    .classic-modal {
-        background-color: #ffffff;
-        width: 100%;
-        max-width: 480px;
-        border-radius: 4px;
-        border: 1px solid var(--border-classic);
-        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
-        overflow: hidden;
-    }
-    
-    .confirmation-variant {
-        width: 420px;
-        max-width: 90vw;
-    }
-
-    .modal-header {
-        padding: 16px 24px;
-        border-bottom: 1px solid var(--border-classic);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background-color: #f8fafc;
-    }
-
-    .modal-header h3 {
-        font-size: 14px;
-        font-weight: 700;
-        color: var(--bg-navy);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .close-modal-btn {
-        background: none;
-        border: none;
-        font-size: 24px;
-        color: var(--secondary-text);
-        cursor: pointer;
-    }
-
-    .modal-body {
-        padding: 24px;
-        display: flex;
+    .management-controls {
         flex-direction: column;
-        gap: 16px;
     }
 
-    .modal-body p {
-        font-size: 13px;
-        color: var(--secondary-text);
-        margin-bottom: 4px;
-        line-height: 1.5;
+    .btn-control {
+        width: 100%;
+        justify-content: center;
     }
 
-    .modal-form-group {
-        display: flex;
+    .table-filters {
         flex-direction: column;
-        gap: 6px;
+        align-items: stretch;
     }
 
-    .modal-form-group label {
-        font-size: 11px;
-        font-weight: 700;
-        color: var(--bg-navy);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .select-wrapper {
-        position: relative;
+    .filter-wrapper,
+    .search-wrapper {
         width: 100%;
     }
 
-    .select-icon {
-        position: absolute;
-        left: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #94a3b8;
-        font-size: 13px;
-        pointer-events: none;
+    .btn-clear-filter {
+        justify-content: center;
     }
 
-    .select-wrapper select {
-        width: 100%;
-        height: 38px;
-        padding: 6px 36px;
-        font-size: 13px;
-        color: var(--primary-text);
-        background-color: #ffffff;
-        border: 1px solid var(--border-classic);
-        border-radius: 3px;
-        appearance: none;
-        background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 12px center;
-        background-size: 12px;
-        cursor: pointer;
-    }
+}
 
-    .select-wrapper select:focus {
-        outline: none;
-        border-color: var(--accent-blue);
-    }
-
-    .file-drop-area {
-        border: 2px dashed var(--border-classic);
-        border-radius: 4px;
-        padding: 30px 20px;
-        text-align: center;
-        position: relative;
-        background-color: #f8fafc;
-    }
-
-    .file-drop-area:hover {
-        border-color: var(--accent-blue);
-        background-color: #f1f5f9;
-    }
-
-    .file-drop-area.file-staged {
-        border-color: #16a34a;
-        background-color: #f0fdf4;
-    }
-
-    .file-drop-area input[type="file"] {
-        position: absolute;
-        width: 100%; height: 100%;
-        top: 0; left: 0;
-        opacity: 0;
-        cursor: pointer;
-    }
-
-    .file-drop-area i {
-        font-size: 28px;
-        color: #94a3b8;
-        margin-bottom: 8px;
-        display: block;
-    }
-
-    .file-drop-area.file-staged i {
-        color: #16a34a;
-    }
-
-    .file-drop-area span {
-        font-size: 13px;
-        font-weight: 500;
-        color: var(--primary-text);
-        word-break: break-all;
-    }
-
-    .modal-footer {
-        padding: 16px 24px;
-        border-top: 1px solid var(--border-classic);
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        background-color: #f8fafc;
-    }
-
-    .btn-action.cancel {
-        background: none;
-        border: 1px solid var(--border-classic);
-        color: var(--secondary-text);
-    }
-
-    .btn-action.cancel:hover {
-        background-color: #f1f5f9;
-    }
-
-    .btn-action.confirm-upload {
-        background-color: var(--bg-navy);
-        border: 1px solid var(--bg-navy);
-        color: #ffffff;
-    }
-
-    .btn-action.confirm-upload:hover {
-        background-color: var(--sidebar-bg);
-    }
-
-    .btn-action:disabled, .close-modal-btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed !important;
-        pointer-events: none;
-    }
 </style>
 
+
+<!-- =============================================================
+     JAVASCRIPT
+============================================================== -->
+
 <script>
-    let activeFormId = null;
 
-    function openConfirmationModal(formId, titleText, messageText) {
-        activeFormId = formId;
-        
-        const dialog = document.getElementById('actionConfirmModal');
-        const title = document.getElementById('confirmModalTitle');
-        const message = document.getElementById('confirmModalMessage');
-        const submitBtn = document.getElementById('confirmModalSubmitBtn');
+let activeFormId = null;
 
-        title.innerText = titleText;
-        message.innerText = messageText;
 
-        if (formId.includes('delete')) {
-            submitBtn.className = "btn-action delete";
-            submitBtn.innerText = "Delete Permanently";
-        } else if (formId.includes('disconnect')) {
-            submitBtn.className = "btn-action disconnect";
-            submitBtn.innerText = "Confirm Disconnect";
-        }
+/* =========================================================
+   CONFIRMATION MODAL
+========================================================= */
 
-        submitBtn.onclick = function() {
-            if (activeFormId) {
-                document.getElementById(activeFormId).submit();
-            }
-        };
+function openConfirmationModal(formId, titleText, messageText) {
 
-        dialog.showModal();
+    activeFormId = formId;
+
+    const dialog = document.getElementById('actionConfirmModal');
+    const title = document.getElementById('confirmModalTitle');
+    const message = document.getElementById('confirmModalMessage');
+    const submitBtn = document.getElementById('confirmModalSubmitBtn');
+
+    title.innerText = titleText;
+    message.innerText = messageText;
+
+
+    /*
+     * Reset button styling first
+     */
+    submitBtn.className = "btn-action";
+
+
+    /*
+     * Delete
+     */
+    if (formId.includes('delete')) {
+
+        submitBtn.classList.add('delete');
+        submitBtn.innerText = "Delete Permanently";
+
     }
 
-    function closeConfirmationModal() {
-        const dialog = document.getElementById('actionConfirmModal');
+
+    /*
+     * Disconnect
+     */
+    else if (formId.includes('disconnect')) {
+
+        submitBtn.classList.add('disconnect');
+        submitBtn.innerText = "Confirm Disconnect";
+
+    }
+
+
+    /*
+     * Reconnect
+     */
+    else if (formId.includes('reconnect')) {
+
+        submitBtn.classList.add('reconnect');
+        submitBtn.innerText = "Confirm Reconnect";
+
+    }
+
+
+    /*
+     * Submit selected form
+     */
+    submitBtn.onclick = function() {
+
+        if (activeFormId) {
+
+            const form = document.getElementById(activeFormId);
+
+            if (form) {
+                form.submit();
+            }
+
+        }
+
+    };
+
+
+    dialog.showModal();
+}
+
+
+/* =========================================================
+   CLOSE CONFIRMATION MODAL
+========================================================= */
+
+function closeConfirmationModal() {
+
+    const dialog = document.getElementById('actionConfirmModal');
+
+    if (dialog.open) {
         dialog.close();
-        activeFormId = null;
     }
 
-    function toggleUploadModal(visible) {
-        const modal = document.getElementById('uploadModal');
-        modal.style.display = visible ? 'flex' : 'none';
-        
-        if (!visible) {
-            document.getElementById('excelUploadForm').reset();
-            const dropZone = document.getElementById('dropZoneContainer');
-            const labelText = document.getElementById('fileLabelText');
-            const icon = document.getElementById('uploadIcon');
-            
-            dropZone.classList.remove('file-staged');
-            labelText.innerText = "Choose file or drag here";
-            labelText.style.color = "";
-            icon.className = "fa-solid fa-cloud-arrow-up";
+    activeFormId = null;
+}
 
-            document.getElementById('submitModalBtn').disabled = false;
-            document.getElementById('cancelModalBtn').disabled = false;
-            document.getElementById('closeModalCross').disabled = false;
-            document.getElementById('submitIcon').className = "fa-solid fa-upload";
-            document.getElementById('submitText').innerText = "Upload File";
+
+/* =========================================================
+   UPLOAD MODAL
+========================================================= */
+
+function toggleUploadModal(visible) {
+
+    const modal = document.getElementById('uploadModal');
+
+    modal.style.display = visible ? 'flex' : 'none';
+
+
+    if (!visible) {
+
+        const form = document.getElementById('excelUploadForm');
+
+        form.reset();
+
+
+        const dropZone =
+            document.getElementById('dropZoneContainer');
+
+        const labelText =
+            document.getElementById('fileLabelText');
+
+        const icon =
+            document.getElementById('uploadIcon');
+
+
+        dropZone.classList.remove('file-staged');
+
+        labelText.innerText =
+            "Choose file or drag here";
+
+        labelText.style.color = "";
+
+        icon.className =
+            "fa-solid fa-cloud-arrow-up";
+
+
+        document.getElementById('submitModalBtn').disabled = false;
+
+        document.getElementById('cancelModalBtn').disabled = false;
+
+        document.getElementById('closeModalCross').disabled = false;
+
+
+        document.getElementById('submitIcon').className =
+            "fa-solid fa-upload";
+
+        document.getElementById('submitText').innerText =
+            "Upload File";
+
+    }
+
+}
+
+
+/* =========================================================
+   FILE SELECTION
+========================================================= */
+
+function handleFileSelection(input) {
+
+    const dropZone =
+        document.getElementById('dropZoneContainer');
+
+    const labelText =
+        document.getElementById('fileLabelText');
+
+    const icon =
+        document.getElementById('uploadIcon');
+
+
+    if (input.files && input.files.length > 0) {
+
+        const fileName =
+            input.files[0].name;
+
+
+        dropZone.classList.add('file-staged');
+
+        icon.className =
+            "fa-solid fa-file-circle-check";
+
+        labelText.innerText =
+            `Selected: ${fileName}`;
+
+        labelText.style.color =
+            "#15803d";
+
+    }
+
+}
+
+
+/* =========================================================
+   UPLOAD FORM SUBMIT
+========================================================= */
+
+function handleFormSubmit(event) {
+
+    const fileInput =
+        document.getElementById('excelFileInput');
+
+    const barangaySelect =
+        document.getElementById('modalBarangaySelect');
+
+
+    if (
+        fileInput.files.length > 0 &&
+        barangaySelect.value !== ""
+    ) {
+
+        document.getElementById('submitModalBtn').disabled = true;
+
+        document.getElementById('cancelModalBtn').disabled = true;
+
+        document.getElementById('closeModalCross').disabled = true;
+
+
+        document.getElementById('submitIcon').className =
+            "fa-solid fa-spinner fa-spin";
+
+        document.getElementById('submitText').innerText =
+            "Processing...";
+
+    }
+
+}
+
+
+/* =========================================================
+   CUSTOMER SEARCH + BARANGAY FILTER
+========================================================= */
+
+function filterCustomerTable() {
+
+    const searchInput =
+        document.getElementById('tableSearch');
+
+    const barangayFilter =
+        document.getElementById('barangayFilter');
+
+
+    const searchValue =
+        searchInput.value.toLowerCase().trim();
+
+    const barangayValue =
+        barangayFilter.value.toLowerCase().trim();
+
+
+    const table =
+        document.getElementById('customerTable');
+
+    const rows =
+        table.querySelectorAll('tbody tr');
+
+
+    rows.forEach(row => {
+
+        /*
+         * Ignore empty-state row
+         */
+        if (row.cells.length < 5) {
+            return;
         }
-    }
 
-    function handleFileSelection(input) {
-        const dropZone = document.getElementById('dropZoneContainer');
-        const labelText = document.getElementById('fileLabelText');
-        const icon = document.getElementById('uploadIcon');
 
-        if (input.files && input.files.length > 0) {
-            const fileName = input.files[0].name;
-            dropZone.classList.add('file-staged');
-            icon.className = "fa-solid fa-file-circle-check";
-            labelText.innerText = `Selected: ${fileName}`;
-            labelText.style.color = "#15803d";
-        }
-    }
+        /*
+         * Column mapping:
+         *
+         * 0 = Submitter No.
+         * 1 = Full Name
+         * 2 = Barangay
+         * 3 = Status
+         * 4 = Actions
+         */
 
-    function handleFormSubmit(event) {
-        const fileInput = document.getElementById('excelFileInput');
-        const barangaySelect = document.getElementById('modalBarangaySelect');
+        const submitterNo =
+            row.cells[0].textContent
+                .toLowerCase()
+                .trim();
 
-        if (fileInput.files.length > 0 && barangaySelect.value !== "") {
-            document.getElementById('submitModalBtn').disabled = true;
-            document.getElementById('cancelModalBtn').disabled = true;
-            document.getElementById('closeModalCross').disabled = true;
-            
-            document.getElementById('submitIcon').className = "fa-solid fa-spinner fa-spin";
-            document.getElementById('submitText').innerText = "Processing...";
-        }
-    }
+        const fullName =
+            row.cells[1].textContent
+                .toLowerCase()
+                .trim();
 
-    function filterCustomerTable() {
-        const input = document.getElementById('tableSearch');
-        const filter = input.value.toLowerCase();
-        const table = document.getElementById('customerTable');
-        const tr = table.getElementsByTagName('tr');
+        const barangay =
+            row.cells[2].textContent
+                .toLowerCase()
+                .trim();
 
-        for (let i = 1; i < tr.length; i++) {
-            let rowTextContent = tr[i].textContent || tr[i].innerText;
-            if (rowTextContent.toLowerCase().indexOf(filter) > -1) {
-                tr[i].style.display = "";
-            } else {
-                tr[i].style.display = "none";
-            }
-        }
-    }
+        const status =
+            row.cells[3].textContent
+                .toLowerCase()
+                .trim();
+
+
+        /*
+         * Search filter
+         */
+
+        const matchesSearch =
+            searchValue === "" ||
+            submitterNo.includes(searchValue) ||
+            fullName.includes(searchValue) ||
+            barangay.includes(searchValue) ||
+            status.includes(searchValue);
+
+
+        /*
+         * Barangay filter
+         */
+
+        const matchesBarangay =
+            barangayValue === "" ||
+            barangay.includes(barangayValue);
+
+
+        /*
+         * Both filters must match
+         */
+
+        row.style.display =
+            matchesSearch && matchesBarangay
+                ? ""
+                : "none";
+
+    });
+
+}
+
+
+/* =========================================================
+   CLEAR ALL FILTERS
+========================================================= */
+
+function clearCustomerFilters() {
+
+    document.getElementById('tableSearch').value = "";
+
+    document.getElementById('barangayFilter').value = "";
+
+    filterCustomerTable();
+
+}
+
 </script>
+
 {% endblock %}

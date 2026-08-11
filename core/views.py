@@ -85,13 +85,24 @@ def admin_dashboard(request):
 
 @login_required
 def customer_list(request):
-    customers = Customer.objects.select_related("barangay").all()
-    barangays_list = Barangay.objects.order_by("barangay_name")
+    customers = Customer.objects.all().order_by(
+        'address',
+        'firstname',
+        'lastname'
+    )
 
-    return render(request, "admin/customers.html", {
-        "customers": customers,
-        "barangays_list": barangays_list,
-    })
+    barangays_list = Barangay.objects.order_by(
+        'barangay_name'
+    )
+
+    return render(
+        request,
+        "admin/customers.html",
+        {
+            "customers": customers,
+            "barangays_list": barangays_list,
+        }
+    )
 
 @login_required
 def add_customer(request):
@@ -427,120 +438,299 @@ def billing(request):
 @login_required
 def create_bill(request):
 
+    # ==========================================================
+    # POST - GENERATE BILLING
+    # ==========================================================
     if request.method == "POST":
 
-        # Convert YYYY-MM to YYYY-MM-01
-        billing_month = datetime.strptime(
-            request.POST.get("billing_month"),
-            "%Y-%m"
-        ).date().replace(day=1)
+        try:
+            # --------------------------------------------------
+            # BILLING MONTH
+            # --------------------------------------------------
+            billing_month_raw = request.POST.get("billing_month")
 
-        due_date = datetime.strptime(
-            request.POST.get("due_date"),
-            "%Y-%m-%d"
-        ).date()
+            if not billing_month_raw:
+                messages.error(
+                    request,
+                    "Billing month is required."
+                )
+                return redirect("create_bill")
 
-        rate_per_cubic = Decimal(
-            request.POST.get("rate_per_cubic") or "25.00"
-        )
+            billing_month = datetime.strptime(
+                billing_month_raw,
+                "%Y-%m"
+            ).date().replace(day=1)
 
-        consumer_data = json.loads(
-            request.POST.get("consumer_data_json", "{}")
-        )
+            # --------------------------------------------------
+            # DUE DATE
+            # --------------------------------------------------
+            due_date_raw = request.POST.get("due_date")
 
-        created = 0
-        skipped = 0
+            if not due_date_raw:
+                messages.error(
+                    request,
+                    "Due date is required."
+                )
+                return redirect("create_bill")
 
-        for customer_id, data in consumer_data.items():
+            due_date = datetime.strptime(
+                due_date_raw,
+                "%Y-%m-%d"
+            ).date()
 
-            customer = Customer.objects.get(pk=customer_id)
-
-            # Skip duplicate billing
-            if Billing.objects.filter(
-                customer=customer,
-                billing_month=billing_month
-            ).exists():
-                skipped += 1
-                continue
-
-            previous_reading = Decimal(
-                str(data.get("previous_reading", "0.00"))
+            # --------------------------------------------------
+            # RATE PER CUBIC METER
+            # --------------------------------------------------
+            rate_per_cubic = Decimal(
+                request.POST.get("rate_per_cubic") or "25.00"
             )
 
-            current_reading = Decimal(
-                str(data.get("current_reading", "0.00"))
+            if rate_per_cubic < 0:
+                messages.error(
+                    request,
+                    "Rate per cubic meter cannot be negative."
+                )
+                return redirect("create_bill")
+
+            # --------------------------------------------------
+            # CONSUMER DATA
+            # --------------------------------------------------
+            consumer_data_raw = request.POST.get(
+                "consumer_data_json",
+                "{}"
             )
 
-            if current_reading < previous_reading:
-                skipped += 1
-                continue
+            try:
+                consumer_data = json.loads(
+                    consumer_data_raw
+                )
+            except json.JSONDecodeError:
+                messages.error(
+                    request,
+                    "Invalid consumer billing data."
+                )
+                return redirect("create_bill")
 
-            connection_fee = Decimal(
-                str(data.get("connection_fee", "0.00"))
+            if not consumer_data:
+                messages.error(
+                    request,
+                    "No consumer entries were submitted."
+                )
+                return redirect("create_bill")
+
+            created = 0
+            skipped = 0
+
+            # ==================================================
+            # DATABASE TRANSACTION
+            # ==================================================
+            with transaction.atomic():
+
+                # ==============================================
+                # PROCESS EACH CUSTOMER
+                # ==============================================
+                for customer_id, data in consumer_data.items():
+
+                    # ------------------------------------------
+                    # GET CUSTOMER
+                    # ------------------------------------------
+                    try:
+                        customer = Customer.objects.get(
+                            pk=customer_id
+                        )
+                    except Customer.DoesNotExist:
+                        skipped += 1
+                        continue
+
+                    # ------------------------------------------
+                    # DUPLICATE BILLING CHECK
+                    # ------------------------------------------
+                    if Billing.objects.filter(
+                        customer=customer,
+                        billing_month=billing_month
+                    ).exists():
+
+                        skipped += 1
+                        continue
+
+                    # ==========================================
+                    # READINGS
+                    # ==========================================
+
+                    previous_reading = Decimal(
+                        str(
+                            data.get(
+                                "previous_reading",
+                                "0.00"
+                            )
+                        )
+                    )
+
+                    current_reading = Decimal(
+                        str(
+                            data.get(
+                                "current_reading",
+                                "0.00"
+                            )
+                        )
+                    )
+
+                    # ------------------------------------------
+                    # VALIDATE READING
+                    # ------------------------------------------
+                    if current_reading < previous_reading:
+                        skipped += 1
+                        continue
+
+                    # ==========================================
+                    # ADDITIONAL FEES
+                    # ==========================================
+
+                    connection_fee = Decimal(
+                        str(
+                            data.get(
+                                "connection_fee",
+                                "0.00"
+                            )
+                        )
+                    )
+
+                    reconnection_fee = Decimal(
+                        str(
+                            data.get(
+                                "reconnection_fee",
+                                "0.00"
+                            )
+                        )
+                    )
+
+                    violation_fee = Decimal(
+                        str(
+                            data.get(
+                                "violation_fee",
+                                "0.00"
+                            )
+                        )
+                    )
+
+                    penalty_fee = Decimal(
+                        str(
+                            data.get(
+                                "penalty_fee",
+                                "0.00"
+                            )
+                        )
+                    )
+
+                    # ==========================================
+                    # SAVE METER READING
+                    # ==========================================
+
+                    MeterReading.objects.update_or_create(
+                        customer=customer,
+                        billing_month=billing_month,
+                        defaults={
+                            "previous_reading": previous_reading,
+                            "current_reading": current_reading,
+                        }
+                    )
+
+                    # ==========================================
+                    # CREATE BILLING
+                    # ==========================================
+
+                    Billing.objects.create(
+                        customer=customer,
+                        billing_month=billing_month,
+
+                        previous_reading=previous_reading,
+                        current_reading=current_reading,
+
+                        rate_per_cubic=rate_per_cubic,
+
+                        connection_fee=connection_fee,
+                        reconnection_fee=reconnection_fee,
+                        violation_fee=violation_fee,
+                        penalty_fee=penalty_fee,
+
+                        due_date=due_date,
+                        status="unpaid",
+                    )
+
+                    # ==========================================
+                    # UPDATE CUSTOMER STATUS
+                    # ==========================================
+
+                    if customer.status == "new":
+
+                        customer.status = "old"
+
+                        customer.save(
+                            update_fields=["status"]
+                        )
+
+                    created += 1
+
+            # ==================================================
+            # SUCCESS MESSAGE
+            # ==================================================
+
+            messages.success(
+                request,
+                f"{created} bill(s) generated successfully. "
+                f"{skipped} skipped."
             )
 
-            reconnection_fee = Decimal(
-                str(data.get("reconnection_fee", "0.00"))
+            return redirect("create_bill")
+
+        except ValueError:
+
+            messages.error(
+                request,
+                "Invalid date or numeric value."
             )
 
-            violation_fee = Decimal(
-                str(data.get("violation_fee", "0.00"))
+            return redirect("create_bill")
+
+        except Exception as e:
+
+            messages.error(
+                request,
+                f"Unable to generate bills: {str(e)}"
             )
 
-            penalty_fee = Decimal(
-                str(data.get("penalty_fee", "0.00"))
-            )
+            return redirect("create_bill")
 
-            # Save or update meter reading
-            MeterReading.objects.update_or_create(
-                customer=customer,
-                billing_month=billing_month,
-                defaults={
-                    "previous_reading": previous_reading,
-                    "current_reading": current_reading,
-                }
-            )
-
-            # Create billing
-            Billing.objects.create(
-                customer=customer,
-                billing_month=billing_month,
-                previous_reading=previous_reading,
-                current_reading=current_reading,
-                rate_per_cubic=rate_per_cubic,
-                connection_fee=connection_fee,
-                reconnection_fee=reconnection_fee,
-                violation_fee=violation_fee,
-                penalty_fee=penalty_fee,
-                due_date=due_date,
-                status="unpaid",
-            )
-
-            if customer.status == "new":
-                customer.status = "old"
-                customer.save(update_fields=["status"])
-
-            created += 1
-
-        messages.success(
-            request,
-            f"{created} bill(s) generated successfully. {skipped} skipped."
-        )
-
-        return redirect("create_bill")
+    # ==========================================================
+    # GET - LOAD BILLING PAGE
+    # ==========================================================
 
     current_month = date.today().replace(day=1)
 
     customer_data = []
 
-    customers = Customer.objects.select_related(
-        "barangay"
-    ).order_by(
-        "lastname",
-        "firstname"
+    # ----------------------------------------------------------
+    # LOAD CUSTOMERS
+    # ----------------------------------------------------------
+
+    customers = (
+        Customer.objects
+        .select_related("barangay")
+        .order_by(
+            "lastname",
+            "firstname"
+        )
     )
 
+    # ==========================================================
+    # BUILD CUSTOMER DATA
+    # ==========================================================
+
     for customer in customers:
+
+        # ------------------------------------------------------
+        # GET MOST RECENT METER READING
+        # ------------------------------------------------------
 
         last_reading = (
             MeterReading.objects
@@ -549,11 +739,19 @@ def create_bill(request):
             .first()
         )
 
-        previous_reading = (
-            last_reading.current_reading
-            if last_reading
-            else Decimal("0.00")
-        )
+        if last_reading:
+
+            previous_reading = (
+                last_reading.current_reading
+            )
+
+        else:
+
+            previous_reading = Decimal("0.00")
+
+        # ------------------------------------------------------
+        # GET CURRENT MONTH READING
+        # ------------------------------------------------------
 
         current_reading = (
             MeterReading.objects
@@ -561,27 +759,89 @@ def create_bill(request):
                 customer=customer,
                 billing_month=current_month
             )
-            .values_list("current_reading", flat=True)
+            .values_list(
+                "current_reading",
+                flat=True
+            )
             .first()
         )
 
+        # ------------------------------------------------------
+        # BARANGAY
+        # ------------------------------------------------------
+
+        if customer.barangay:
+
+            barangay_name = str(
+                customer.barangay
+            )
+
+        else:
+
+            barangay_name = ""
+
+        # ------------------------------------------------------
+        # STORE CUSTOMER
+        # ------------------------------------------------------
+
         customer_data.append({
+
             "id": customer.id,
+
             "firstname": customer.firstname,
+
             "lastname": customer.lastname,
+
             "middlename": customer.middlename,
+
             "submitter_no": customer.submitter_no,
+
             "status": customer.status,
+
+            "barangay": barangay_name,
+
             "previous_reading": previous_reading,
-            "current_reading": current_reading or "",
+
+            "current_reading": (
+                current_reading
+                if current_reading is not None
+                else ""
+            ),
         })
+
+    # ==========================================================
+    # BARANGAY LIST
+    # ==========================================================
+
+    barangays = []
+
+    for customer in customers:
+
+        if customer.barangay:
+
+            barangay_name = str(
+                customer.barangay
+            )
+
+            if barangay_name not in barangays:
+
+                barangays.append(
+                    barangay_name
+                )
+
+    barangays.sort()
+
+    # ==========================================================
+    # RENDER PAGE
+    # ==========================================================
 
     return render(
         request,
         "admin/create_bill.html",
         {
             "customer_data": customer_data,
-        },
+            "barangays": barangays,
+        }
     )
 
 @login_required
@@ -589,32 +849,69 @@ def payment(request):
 
     today = timezone.localdate()
 
-    billings = Billing.objects.select_related(
-        "customer"
-    ).filter(
-        status="unpaid"
-    ).order_by(
-        "customer__firstname",
-        "-billing_month"
+    # ==========================================================
+    # GET ALL UNPAID BILLINGS
+    # ==========================================================
+
+    billings = (
+        Billing.objects
+        .select_related("customer")
+        .filter(status="unpaid")
+        .order_by(
+            "customer__firstname",
+            "-billing_month"
+        )
     )
+
+    # ==========================================================
+    # APPLY OVERDUE PENALTY
+    # ==========================================================
 
     for bill in billings:
 
-        # Check if overdue and penalty not yet applied
-        if bill.due_date < today and (bill.penalty_fee or Decimal("0.00")) == Decimal("0.00"):
+        # Check if overdue
+        if (
+            bill.due_date < today
+            and (bill.penalty_fee or Decimal("0.00"))
+            == Decimal("0.00")
+        ):
 
-            # 10% penalty based on the rate_per_cubic
-            bill.penalty_fee = bill.rate_per_cubic * Decimal("0.10")
+            # 10% penalty based on rate per cubic meter
+            bill.penalty_fee = (
+                bill.rate_per_cubic
+                * Decimal("0.10")
+            )
 
-            # penalty for total_amount
-            # bill.penalty_fee = bill.total_amount * Decimal("0.10")
-
-            # Save the bill (save() will automatically recalculate total_amount)
+            # save() automatically recalculates total_amount
             bill.save()
 
-    return render(request, "admin/payments.html", {
-        "billings": billings
-    })
+    # ==========================================================
+    # GET AVAILABLE BILLING MONTHS
+    # ==========================================================
+
+    billing_months = (
+        Billing.objects
+        .filter(status="unpaid")
+        .values_list(
+            "billing_month",
+            flat=True
+        )
+        .distinct()
+        .order_by("-billing_month")
+    )
+
+    # ==========================================================
+    # RENDER
+    # ==========================================================
+
+    return render(
+        request,
+        "admin/payments.html",
+        {
+            "billings": billings,
+            "billing_months": billing_months,
+        }
+    )
 
 @login_required
 def process_payment(request, id):
