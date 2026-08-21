@@ -18,7 +18,8 @@ from django.db.models import Sum, Count
 from django.db.models.functions import Coalesce
 import json
 from django.db.models.deletion import ProtectedError
-@login_required
+
+@login_required(login_url="login-view")(login_url='login-view')
 def admin_dashboard(request):
 
     # ==========================
@@ -83,7 +84,7 @@ def admin_dashboard(request):
         context
     )
 
-@login_required
+@login_required(login_url="login-view")
 def customer_list(request):
     customers = Customer.objects.all().order_by(
         'address',
@@ -104,7 +105,7 @@ def customer_list(request):
         }
     )
 
-@login_required
+@login_required(login_url="login-view")
 def add_customer(request):
 
     barangays = Barangay.objects.all()
@@ -254,7 +255,7 @@ def add_customer(request):
         "barangays": barangays,
     })
 
-@login_required
+@login_required(login_url="login-view")
 def update_customer(request, pk):
 
     customer = get_object_or_404(Customer, pk=pk)
@@ -287,7 +288,7 @@ def update_customer(request, pk):
         "barangays": barangays,
     })
 
-@login_required
+@login_required(login_url="login-view")
 def import_customers(request):
 
     print("\n========== IMPORT STARTED ==========")
@@ -489,7 +490,7 @@ def import_customers(request):
 
     return redirect("customers")
 
-@login_required
+@login_required(login_url="login-view")
 def delete_customer(request, id):
     if request.method == "POST":
         customer = get_object_or_404(Customer, id=id)
@@ -504,7 +505,7 @@ def delete_customer(request, id):
     return redirect("customers")
 
 
-@login_required
+@login_required(login_url="login-view")
 def customer_profile(request, customer_id):
 
     customer = get_object_or_404(Customer, pk=customer_id)
@@ -540,7 +541,7 @@ def customer_profile(request, customer_id):
         "total_paid": total_paid,
     })
 
-@login_required
+@login_required(login_url="login-view")
 def billing(request):
     billings = Billing.objects.select_related("customer").order_by(
         "-billing_month",
@@ -551,7 +552,7 @@ def billing(request):
         "billings": billings
     })
 
-@login_required
+@login_required(login_url="login-view")
 def create_bill(request):
 
     # ==========================================================
@@ -1066,7 +1067,7 @@ def create_bill(request):
         }
     )
 
-@login_required
+@login_required(login_url="login-view")
 def payment(request):
 
     today = timezone.localdate()
@@ -1155,7 +1156,7 @@ def payment(request):
         }
     )
 
-@login_required
+@login_required(login_url="login-view")
 def process_payment(request, id):
 
     bill = get_object_or_404(
@@ -1247,7 +1248,7 @@ def process_payment(request, id):
 
 
 
-@login_required
+@login_required(login_url="login-view")
 def reports(request):
 
     # ======================================
@@ -1340,7 +1341,7 @@ def reports(request):
         context,
     )
 
-@login_required
+@login_required(login_url="login-view")
 def official_receipt(request, payment_id):
 
     payment = get_object_or_404(
@@ -1360,7 +1361,7 @@ def official_receipt(request, payment_id):
         }
     )
 
-@login_required
+@login_required(login_url="login-view")
 def post_notification(request):
 
     # ==========================================================
@@ -1597,7 +1598,7 @@ def post_notification(request):
         }
     )
 
-@login_required
+@login_required(login_url="login-view")
 def delete_notification(request, pk):
     notification = get_object_or_404(Notification, pk=pk)
     notification.delete()
@@ -1605,7 +1606,7 @@ def delete_notification(request, pk):
     messages.success(request, "Notification deleted successfully.")
     return redirect("post-notifacation")
 
-@login_required
+@login_required(login_url="login-view")
 def paid_report(request):
 
     billing_coverage = request.GET.get("billing_coverage")
@@ -1644,7 +1645,7 @@ def paid_report(request):
         }
     )
 
-@login_required
+@login_required(login_url="login-view")
 def unpaid_report(request):
 
     billing_coverage = request.GET.get("billing_coverage")
@@ -1682,7 +1683,7 @@ def unpaid_report(request):
         }
     )
 
-@login_required
+@login_required(login_url="login-view")
 def barangay_list(request):
 
     barangays_list = Barangay.objects.all()
@@ -1701,7 +1702,7 @@ def barangay_list(request):
         }
     )
 
-@login_required
+@login_required(login_url="login-view")
 def add_brgy(request):
 
     if request.method == "POST":
@@ -1807,7 +1808,7 @@ def add_brgy(request):
             "form_data": {},
         }
     )
-@login_required
+@login_required(login_url="login-view")
 def edit_brgy(request, pk):
 
     brgy = get_object_or_404(Barangay, pk=pk)
@@ -1931,7 +1932,7 @@ def edit_brgy(request, pk):
         }
     )
 
-@login_required
+@login_required(login_url="login-view")
 def delete_brgy(request, pk):
 
     # Only allow POST
@@ -1974,7 +1975,7 @@ def delete_brgy(request, pk):
     # ALWAYS redirect back to Barangay list
     return redirect("brgy_list")
 
-@login_required
+@login_required(login_url="login-view")
 def disconnect_customer(request, pk):
 
     if request.method == "POST":
@@ -1998,7 +1999,7 @@ def disconnect_customer(request, pk):
 
     return redirect("customers")
 
-@login_required
+@login_required(login_url="login-view")
 def reconnect_customer(request, pk):
 
     customer = get_object_or_404(Customer, pk=pk)
@@ -2014,7 +2015,7 @@ def reconnect_customer(request, pk):
 
     return redirect("customers")
 
-@login_required
+@login_required(login_url="login-view")
 def disconnected_list(request):
 
     disconnected_consumers = (
@@ -2035,7 +2036,7 @@ def disconnected_list(request):
         }
     )
 
-@login_required
+@login_required(login_url="login-view")
 def feedback_list(request):
 
     feedbacks = (
