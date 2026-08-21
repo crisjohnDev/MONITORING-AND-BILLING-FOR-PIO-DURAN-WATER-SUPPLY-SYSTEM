@@ -1,603 +1,1639 @@
 {% extends 'admin.html' %}
 
 {% block content %}
+
 <header class="top-navbar">
+
     <div class="page-title">
         <h1 id="current-view-title">Process Collection Receipt</h1>
     </div>
-    
+
     <div class="admin-profile">
         <div class="admin-info">
             <small>System Administrator</small>
         </div>
+
         <div class="admin-avatar">AD</div>
     </div>
+
 </header>
 
+
 <div class="workspace">
+
     <div class="form-container-card">
+
+        <!-- =====================================================
+             HEADER
+        ====================================================== -->
+
         <div class="form-card-header">
+
             <div class="header-left">
-                <div class="icon-badge"><i class="fa-solid fa-cash-register"></i></div>
+
+                <div class="icon-badge">
+                    <i class="fa-solid fa-cash-register"></i>
+                </div>
+
                 <div>
                     <h3>Invoice Settlement & Cash Counter Ledger</h3>
-                    <p class="subtitle">Process customer cash payments and register official collection returns.</p>
+
+                    <p class="subtitle">
+                        Process customer cash payments and register official collection returns.
+                    </p>
                 </div>
+
             </div>
+
             <a href="{% url 'payments' %}" class="btn-back">
-                <i class="fa-solid fa-arrow-left-long"></i> Back to Payments
+                <i class="fa-solid fa-arrow-left-long"></i>
+                Back to Payments
             </a>
+
         </div>
 
-        <form method="POST">
+
+        <!-- =====================================================
+             PAYMENT FORM
+        ====================================================== -->
+
+        <form method="POST" id="paymentForm">
+
             {% csrf_token %}
 
-            <div class="form-divider"><span>Consumer Context</span></div>
+
+            <!-- =================================================
+                 CONSUMER CONTEXT
+            ================================================== -->
+
+            <div class="form-divider">
+                <span>Consumer Context</span>
+            </div>
+
 
             <div class="form-row-dual">
+
                 <div class="form-group">
+
                     <label>Submitter No.</label>
+
                     <div class="input-with-icon locked">
+
                         <i class="fa-solid fa-hashtag input-icon"></i>
-                        <input type="text" readonly class="font-mono" value="{{ bill.customer.submitter_no }}">
+
+                        <input
+                            type="text"
+                            readonly
+                            class="font-mono"
+                            value="{{ bill.customer.submitter_no }}"
+                        >
+
                     </div>
+
                 </div>
+
+
                 <div class="form-group">
+
                     <label>Customer Name</label>
+
                     <div class="input-with-icon locked">
+
                         <i class="fa-solid fa-user input-icon"></i>
-                        <input type="text" readonly class="font-semibold" value="{{ bill.customer.firstname }} {{ bill.customer.lastname}}">
+
+                        <input
+                            type="text"
+                            readonly
+                            class="font-semibold"
+                            value="{{ bill.customer.firstname }} {{ bill.customer.lastname }}"
+                        >
+
                     </div>
+
                 </div>
+
             </div>
+
 
             <div class="form-row-dual">
+
                 <div class="form-group">
+
                     <label>Billing Month</label>
+
                     <div class="input-with-icon locked">
+
                         <i class="fa-solid fa-calendar-days input-icon"></i>
-                        <input type="text" readonly value="{{ bill.billing_month|date:'F Y' }}">
+
+                        <input
+                            type="text"
+                            readonly
+                            value="{{ bill.billing_month|date:'F Y' }}"
+                        >
+
                     </div>
+
                 </div>
+
+
                 <div class="form-group">
+
                     <label>Due Date</label>
+
                     <div class="input-with-icon locked alert-date">
+
                         <i class="fa-solid fa-clock input-icon"></i>
-                        <input type="text" readonly class="font-semibold" value="{{ bill.due_date|date:'F d, Y' }}">
+
+                        <input
+                            type="text"
+                            readonly
+                            class="font-semibold"
+                            value="{{ bill.due_date|date:'F d, Y' }}"
+                        >
+
                     </div>
+
                 </div>
+
             </div>
 
-            <div class="form-divider"><span>Consumption Telemetry Matrix</span></div>
+
+            <!-- =================================================
+                 CONSUMPTION
+            ================================================== -->
+
+            <div class="form-divider">
+                <span>Consumption Telemetry Matrix</span>
+            </div>
+
 
             <div class="form-row-triple">
+
                 <div class="form-group">
+
                     <label>Previous Reading</label>
+
                     <div class="input-with-icon locked text-right-wrapper">
+
                         <i class="fa-solid fa-gauge-simple input-icon"></i>
-                        <input type="text" readonly class="font-mono text-right" value="{{ bill.previous_reading }} m³">
+
+                        <input
+                            type="text"
+                            readonly
+                            class="font-mono text-right"
+                            value="{{ bill.previous_reading }} m³"
+                        >
+
                     </div>
+
                 </div>
+
+
                 <div class="form-group">
+
                     <label>Current Reading</label>
+
                     <div class="input-with-icon locked text-right-wrapper">
+
                         <i class="fa-solid fa-gauge-high input-icon"></i>
-                        <input type="text" readonly class="font-mono text-right" value="{{ bill.current_reading }} m³">
+
+                        <input
+                            type="text"
+                            readonly
+                            class="font-mono text-right"
+                            value="{{ bill.current_reading }} m³"
+                        >
+
                     </div>
+
                 </div>
+
+
                 <div class="form-group">
+
                     <label>Consumption</label>
-                    <div class="input-with-icon locked text-right-wrapper focus-highlight">
+
+                    <div class="input-with-icon locked focus-highlight text-right-wrapper">
+
                         <i class="fa-solid fa-droplet input-icon"></i>
-                        <input type="text" readonly class="font-mono text-right font-semibold" value="{{ bill.consumption }} m³">
+
+                        <input
+                            type="text"
+                            readonly
+                            class="font-mono text-right font-semibold"
+                            value="{{ bill.consumption }} m³"
+                        >
+
                     </div>
+
                 </div>
+
             </div>
 
-            <div class="form-divider"><span>Surcharges & Administrative Fees</span></div>
+
+            <!-- =================================================
+                 FEES
+            ================================================== -->
+
+            <div class="form-divider">
+                <span>Surcharges & Administrative Fees</span>
+            </div>
+
 
             <div class="form-row-triple">
+
                 <div class="form-group">
+
                     <label>Connection Fee</label>
+
                     <div class="input-with-icon locked text-right-wrapper">
+
                         <i class="fa-solid fa-plug input-icon"></i>
-                        <input type="text" readonly class="font-mono text-right" value="₱{{ bill.connection_fee|default:'0.00' }}">
-                        <input type="hidden" id="connection_fee" value="{{ bill.connection_fee|default:'0.00' }}">
+
+                        <input
+                            type="text"
+                            readonly
+                            class="font-mono text-right"
+                            value="₱{{ bill.connection_fee|default:'0.00' }}"
+                        >
+
                     </div>
+
                 </div>
+
+
                 <div class="form-group">
+
                     <label>Reconnection Fee</label>
+
                     <div class="input-with-icon locked text-right-wrapper">
+
                         <i class="fa-solid fa-bolt input-icon"></i>
-                        <input type="text" readonly class="font-mono text-right" value="₱{{ bill.reconnection_fee|default:'0.00' }}">
-                        <input type="hidden" id="reconnection_fee" value="{{ bill.reconnection_fee|default:'0.00' }}">
+
+                        <input
+                            type="text"
+                            readonly
+                            class="font-mono text-right"
+                            value="₱{{ bill.reconnection_fee|default:'0.00' }}"
+                        >
+
                     </div>
+
                 </div>
+
+
                 <div class="form-group">
+
                     <label>Violation Fee</label>
+
                     <div class="input-with-icon locked text-right-wrapper">
+
                         <i class="fa-solid fa-triangle-exclamation input-icon"></i>
-                        <input type="text" readonly class="font-mono text-right" value="₱{{ bill.violation_fee|default:'0.00' }}">
-                        <input type="hidden" id="violation_fee" value="{{ bill.violation_fee|default:'0.00' }}">
+
+                        <input
+                            type="text"
+                            readonly
+                            class="font-mono text-right"
+                            value="₱{{ bill.violation_fee|default:'0.00' }}"
+                        >
+
                     </div>
+
                 </div>
+
             </div>
 
-            <div class="form-divider"><span>Cash Registry Counter Terminal</span></div>
+
+            <!-- =================================================
+                 CASH REGISTRY
+            ================================================== -->
+
+            <div class="form-divider">
+                <span>Cash Registry Counter Terminal</span>
+            </div>
+
 
             <div class="live-calculation-grid">
+
+
+                <!-- TOTAL DUE -->
+
                 <div class="calc-card total-highlight">
-                    <div class="calc-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+
+                    <div class="calc-icon">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                    </div>
+
                     <div class="calc-info">
-                        <span class="calc-label">Total Amount Due</span>
-                        <div class="calc-value">₱<span id="display_amount_due">{{ bill.total_amount }}</span></div>
+
+                        <span class="calc-label">
+                            Exact Amount Due
+                        </span>
+
+                        <div class="calc-value">
+                            ₱{{ bill.total_amount|floatformat:2 }}
+                        </div>
+
                     </div>
-                    <input type="hidden" id="base_bill_amount" value="{{ bill.total_amount }}">
-                    <input type="hidden" id="amount_due" value="0.00">
-                </div>
-                
-                <div class="calc-card cash-input-card">
-                    <div class="calc-icon"><i class="fa-solid fa-money-bill-wave"></i></div>
-                    <div class="calc-info wide-input">
-                        <span class="calc-label">Cash Received <span class="required">*</span></span>
-                        <input 
-                            id="amount_paid" 
-                            name="amount_paid" 
-                            type="number" 
-                            step="0.01" 
-                            required 
-                            placeholder="0.00"
-                            oninput="calculateChange()"
-                            class="cash-input font-mono"
-                        >
-                    </div>
+
                 </div>
 
-                {% comment %} <div class="calc-card change-highlight">
-                    <div class="calc-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
-                    <div class="calc-info">
-                        <span class="calc-label">Calculated Change</span>
-                        <div class="calc-value">₱<span id="change_display">0.00</span></div>
+
+                <!-- CASH RECEIVED -->
+
+                <div class="calc-card cash-input-card">
+
+                    <div class="calc-icon">
+                        <i class="fa-solid fa-money-bill-wave"></i>
                     </div>
-                    <input type="hidden" id="change" value="0.00">
-                </div> {% endcomment %}
+
+                    <div class="calc-info wide-input">
+
+                        <span class="calc-label">
+                            Exact Cash Received
+                            <span class="required">*</span>
+                        </span>
+
+                        <input
+                            id="amount_paid"
+                            name="amount_paid"
+                            type="number"
+                            step="0.01"
+                            min="{{ bill.total_amount }}"
+                            max="{{ bill.total_amount }}"
+                            required
+                            placeholder="0.00"
+                            class="cash-input font-mono"
+                            inputmode="decimal"
+                        >
+
+                        <small id="paymentValidation" class="payment-validation">
+                            Enter exactly ₱{{ bill.total_amount|floatformat:2 }}
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <!-- PAYMENT STATUS -->
+
+                <div
+                    class="calc-card payment-status-card"
+                    id="paymentStatusCard"
+                >
+
+                    <div class="calc-icon">
+                        <i
+                            id="paymentStatusIcon"
+                            class="fa-solid fa-circle-exclamation"
+                        ></i>
+                    </div>
+
+                    <div class="calc-info">
+
+                        <span class="calc-label">
+                            Payment Validation
+                        </span>
+
+                        <div
+                            class="payment-status-text"
+                            id="paymentStatusText"
+                        >
+                            Waiting for amount
+                        </div>
+
+                    </div>
+
+                </div>
+
             </div>
+
+
+            <!-- =================================================
+                 REMARKS
+            ================================================== -->
 
             <div class="form-group full-width">
-                <label for="remarks">Transaction Remarks / Internal Auditor Notes</label>
-                <textarea name="remarks" id="remarks" rows="3" placeholder="Add payment reference notes, check codes, split-payment details, or ledger validation keys..."></textarea>
+
+                <label for="remarks">
+                    Transaction Remarks / Internal Auditor Notes
+                </label>
+
+                <textarea
+                    name="remarks"
+                    id="remarks"
+                    rows="3"
+                    placeholder="Add payment reference notes, check codes, split-payment details, or ledger validation keys..."
+                ></textarea>
+
             </div>
+
+
+            <!-- =================================================
+                 ACTIONS
+            ================================================== -->
 
             <div class="form-actions-footer">
-                <a href="{% url 'payments' %}" class="btn-secondary">Cancel Entry</a>
-                <button type="submit" class="btn-submit">
-                    <i class="fa-solid fa-cash-register"></i> Complete Transaction
+
+                <a
+                    href="{% url 'payments' %}"
+                    class="btn-secondary"
+                >
+                    Cancel Entry
+                </a>
+
+
+                <button
+                    type="submit"
+                    class="btn-submit"
+                    id="completePaymentButton"
+                    disabled
+                >
+
+                    <i class="fa-solid fa-cash-register"></i>
+
+                    Complete Transaction
+
                 </button>
+
             </div>
+
         </form>
+
     </div>
+
 </div>
 
+
 <style>
-    /* Main Layout Framework Cards Container */
+
+/* =========================================================
+   MAIN CARD
+========================================================= */
+
+.form-container-card {
+
+    background: #ffffff;
+
+    border-radius: 8px;
+
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.05),
+        0 2px 4px -1px rgba(0, 0, 0, 0.03);
+
+    border: 1px solid var(--border-classic);
+
+    max-width: 800px;
+
+    margin: 0 auto;
+
+    padding: 30px;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.form-card-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    border-bottom: 1px solid var(--border-classic);
+
+    padding-bottom: 20px;
+
+    margin-bottom: 15px;
+}
+
+
+.form-card-header .header-left {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+}
+
+
+.form-card-header .icon-badge {
+
+    width: 44px;
+
+    height: 44px;
+
+    background-color: rgba(15, 29, 58, 0.05);
+
+    color: var(--bg-navy);
+
+    border-radius: 6px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 20px;
+}
+
+
+.form-card-header h3 {
+
+    font-size: 18px;
+
+    font-weight: 700;
+
+    color: var(--bg-navy);
+}
+
+
+.form-card-header .subtitle {
+
+    font-size: 13px;
+
+    color: var(--secondary-text);
+
+    margin-top: 2px;
+}
+
+
+/* =========================================================
+   BACK BUTTON
+========================================================= */
+
+.btn-back {
+
+    font-size: 13px;
+
+    text-decoration: none;
+
+    color: var(--secondary-text);
+
+    font-weight: 600;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    padding: 6px 12px;
+
+    border-radius: 4px;
+
+    transition: all 0.2s;
+}
+
+
+.btn-back:hover {
+
+    color: var(--bg-navy);
+
+    background-color: #f1f5f9;
+}
+
+
+/* =========================================================
+   FORM
+========================================================= */
+
+.form-group {
+
+    margin-bottom: 20px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+}
+
+
+.form-row-dual {
+
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 20px;
+}
+
+
+.form-row-triple {
+
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 20px;
+}
+
+
+/* =========================================================
+   DIVIDERS
+========================================================= */
+
+.form-divider {
+
+    display: flex;
+
+    align-items: center;
+
+    text-align: center;
+
+    margin: 25px 0 20px 0;
+}
+
+
+.form-divider::before,
+.form-divider::after {
+
+    content: '';
+
+    flex: 1;
+
+    border-bottom: 1px solid #e2e8f0;
+}
+
+
+.form-divider span {
+
+    padding: 0 15px;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1px;
+
+    color: #94a3b8;
+}
+
+
+/* =========================================================
+   LABELS
+========================================================= */
+
+.form-group label {
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    color: #475569;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.5px;
+}
+
+
+.required {
+
+    color: #ef4444;
+}
+
+
+/* =========================================================
+   INPUTS
+========================================================= */
+
+.input-with-icon {
+
+    position: relative;
+
+    display: flex;
+
+    align-items: center;
+}
+
+
+.input-icon {
+
+    position: absolute;
+
+    left: 14px;
+
+    color: #94a3b8;
+
+    font-size: 14px;
+
+    pointer-events: none;
+
+    z-index: 2;
+}
+
+
+.input-with-icon input,
+.form-group textarea {
+
+    width: 100%;
+
+    height: 42px;
+
+    padding: 8px 12px 8px 40px;
+
+    font-size: 14px;
+
+    border: 1px solid #cbd5e1;
+
+    border-radius: 6px;
+
+    color: var(--primary-text);
+
+    background-color: #ffffff;
+
+    box-sizing: border-box;
+
+    transition: all 0.2s;
+}
+
+
+.form-group textarea {
+
+    height: auto;
+
+    resize: vertical;
+
+    font-family: inherit;
+
+    padding: 12px;
+}
+
+
+.form-group textarea:focus {
+
+    outline: none;
+
+    border-color: var(--accent-blue);
+
+    box-shadow:
+        0 0 0 3px rgba(29, 78, 216, 0.1);
+}
+
+
+/* =========================================================
+   READONLY
+========================================================= */
+
+.input-with-icon.locked input {
+
+    background-color: #f8fafc;
+
+    border-color: #e2e8f0;
+
+    color: #334155;
+
+    cursor: not-allowed;
+}
+
+
+.input-with-icon.locked.alert-date input {
+
+    color: #b45309;
+
+    font-weight: 600;
+
+    background-color: #fffbeb;
+
+    border-color: #fde68a;
+}
+
+
+.input-with-icon.locked.alert-date .input-icon {
+
+    color: #d97706;
+}
+
+
+.input-with-icon.locked.focus-highlight input {
+
+    background-color: rgba(15, 29, 58, 0.03);
+
+    color: var(--bg-navy);
+}
+
+
+.input-with-icon.locked.focus-highlight .input-icon {
+
+    color: var(--bg-navy);
+}
+
+
+/* =========================================================
+   TEXT
+========================================================= */
+
+.text-right-wrapper input {
+
+    padding-right: 14px;
+}
+
+
+.font-mono {
+
+    font-family: monospace;
+
+    font-size: 14px;
+}
+
+
+.font-semibold {
+
+    font-weight: 600;
+}
+
+
+.text-right {
+
+    text-align: right;
+}
+
+
+/* =========================================================
+   CALCULATION GRID
+========================================================= */
+
+.live-calculation-grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 16px;
+
+    margin: 25px 0;
+}
+
+
+.calc-card {
+
+    background-color: #f8fafc;
+
+    border: 1px solid #e2e8f0;
+
+    border-radius: 8px;
+
+    padding: 16px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    transition: all 0.2s;
+}
+
+
+.calc-card .calc-icon {
+
+    width: 40px;
+
+    height: 40px;
+
+    border-radius: 50%;
+
+    background: #ffffff;
+
+    border: 1px solid #e2e8f0;
+
+    color: #475569;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 16px;
+
+    flex-shrink: 0;
+}
+
+
+.calc-info {
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+
+    min-width: 0;
+}
+
+
+.calc-info.wide-input {
+
+    width: 100%;
+}
+
+
+.calc-card .calc-label {
+
+    font-size: 11px;
+
+    text-transform: uppercase;
+
+    font-weight: 700;
+
+    color: #64748b;
+
+    letter-spacing: 0.5px;
+}
+
+
+/* =========================================================
+   TOTAL AMOUNT
+========================================================= */
+
+.calc-card.total-highlight {
+
+    background-color: #fff1f2;
+
+    border-color: #fecdd3;
+}
+
+
+.calc-card.total-highlight .calc-icon {
+
+    background: #ffe4e6;
+
+    color: #e11d48;
+
+    border-color: #fda4af;
+}
+
+
+.calc-card.total-highlight .calc-label {
+
+    color: #9f1239;
+}
+
+
+.calc-card.total-highlight .calc-value {
+
+    color: #e11d48;
+
+    font-size: 20px;
+
+    font-weight: 700;
+
+    font-family: monospace;
+
+    margin-top: 2px;
+}
+
+
+/* =========================================================
+   CASH INPUT
+========================================================= */
+
+.calc-card.cash-input-card {
+
+    background-color: #ffffff;
+
+    border-color: var(--accent-blue);
+
+    box-shadow:
+        0 4px 12px rgba(29, 78, 216, 0.06);
+}
+
+
+.calc-card.cash-input-card .calc-icon {
+
+    background: rgba(29, 78, 216, 0.05);
+
+    color: var(--accent-blue);
+
+    border-color: rgba(29, 78, 216, 0.15);
+}
+
+
+.calc-card.cash-input-card .calc-label {
+
+    color: var(--bg-navy);
+
+    margin-bottom: 4px;
+}
+
+
+.cash-input {
+
+    width: 100%;
+
+    height: 34px;
+
+    font-size: 18px;
+
+    font-weight: 700;
+
+    border: none;
+
+    border-bottom: 2px solid #cbd5e1;
+
+    color: var(--bg-navy);
+
+    background-color: transparent;
+
+    padding: 0;
+
+    transition: border-color 0.2s;
+}
+
+
+.cash-input:focus {
+
+    outline: none;
+
+    border-color: var(--accent-blue);
+}
+
+
+/* =========================================================
+   PAYMENT VALIDATION
+========================================================= */
+
+.payment-validation {
+
+    display: block;
+
+    margin-top: 6px;
+
+    font-size: 10px;
+
+    font-weight: 600;
+
+    color: #64748b;
+}
+
+
+.cash-input.payment-valid {
+
+    border-bottom-color: #16a34a;
+
+    color: #15803d;
+}
+
+
+.cash-input.payment-invalid {
+
+    border-bottom-color: #dc2626;
+
+    color: #dc2626;
+}
+
+
+.payment-status-card {
+
+    background-color: #fffbeb;
+
+    border-color: #fde68a;
+}
+
+
+.payment-status-card .calc-icon {
+
+    background-color: #fef3c7;
+
+    color: #d97706;
+
+    border-color: #fcd34d;
+}
+
+
+.payment-status-text {
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    margin-top: 3px;
+
+    color: #b45309;
+}
+
+
+/* Valid state */
+
+.payment-status-card.payment-valid-card {
+
+    background-color: #f0fdf4;
+
+    border-color: #bbf7d0;
+}
+
+
+.payment-status-card.payment-valid-card .calc-icon {
+
+    background-color: #dcfce7;
+
+    color: #16a34a;
+
+    border-color: #86efac;
+}
+
+
+.payment-status-card.payment-valid-card .payment-status-text {
+
+    color: #15803d;
+}
+
+
+/* Invalid state */
+
+.payment-status-card.payment-invalid-card {
+
+    background-color: #fef2f2;
+
+    border-color: #fecaca;
+}
+
+
+.payment-status-card.payment-invalid-card .calc-icon {
+
+    background-color: #fee2e2;
+
+    color: #dc2626;
+
+    border-color: #fca5a5;
+}
+
+
+.payment-status-card.payment-invalid-card .payment-status-text {
+
+    color: #dc2626;
+}
+
+
+/* =========================================================
+   FOOTER BUTTONS
+========================================================= */
+
+.form-actions-footer {
+
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 12px;
+
+    border-top: 1px solid var(--border-classic);
+
+    padding-top: 20px;
+
+    margin-top: 15px;
+}
+
+
+.btn-secondary {
+
+    background-color: #ffffff;
+
+    border: 1px solid #cbd5e1;
+
+    color: #334155;
+
+    padding: 11px 22px;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    border-radius: 6px;
+
+    text-decoration: none;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    transition: all 0.2s;
+}
+
+
+.btn-secondary:hover {
+
+    background-color: #f8fafc;
+
+    border-color: #94a3b8;
+
+    color: var(--bg-navy);
+}
+
+
+.btn-submit {
+
+    background-color: var(--bg-navy);
+
+    border: 1px solid rgba(0, 0, 0, 0.1);
+
+    color: #ffffff;
+
+    padding: 11px 26px;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.5px;
+
+    border-radius: 6px;
+
+    cursor: pointer;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    transition: all 0.2s;
+
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+
+.btn-submit:hover:not(:disabled) {
+
+    background-color: #1e3a6d;
+
+    transform: translateY(-1px);
+}
+
+
+.btn-submit:active:not(:disabled) {
+
+    transform: translateY(0);
+}
+
+
+.btn-submit:disabled {
+
+    background-color: #94a3b8;
+
+    border-color: #94a3b8;
+
+    cursor: not-allowed;
+
+    opacity: 0.7;
+
+    box-shadow: none;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 640px) {
+
     .form-container-card {
-        background: #ffffff;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-        border: 1px solid var(--border-classic);
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 30px;
+
+        padding: 20px;
+
     }
 
     .form-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid var(--border-classic);
-        padding-bottom: 20px;
-        margin-bottom: 15px;
-    }
 
-    .form-card-header .header-left {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
+        align-items: flex-start;
 
-    .form-card-header .icon-badge {
-        width: 44px;
-        height: 44px;
-        background-color: rgba(15, 29, 58, 0.05);
-        color: var(--bg-navy);
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-    }
-
-    .form-card-header h3 {
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--bg-navy);
-    }
-
-    .form-card-header .subtitle {
-        font-size: 13px;
-        color: var(--secondary-text);
-        margin-top: 2px;
-    }
-
-    .btn-back {
-        font-size: 13px;
-        text-decoration: none;
-        color: var(--secondary-text);
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 12px;
-        border-radius: 4px;
-        transition: all 0.2s;
-    }
-
-    .btn-back:hover {
-        color: var(--bg-navy);
-        background-color: #f1f5f9;
-    }
-
-    /* Layout Positioning Grids */
-    .form-group {
-        margin-bottom: 20px;
-        display: flex;
         flex-direction: column;
-        gap: 8px;
+
+        gap: 15px;
+
     }
 
-    .form-row-dual {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-    }
-
-    .form-row-triple {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 20px;
-    }
-
-    .form-divider {
-        display: flex;
-        align-items: center;
-        text-align: center;
-        margin: 25px 0 20px 0;
-    }
-
-    .form-divider::before, .form-divider::after {
-        content: '';
-        flex: 1;
-        border-bottom: 1px solid #e2e8f0;
-    }
-
-    .form-divider span {
-        padding: 0 15px;
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: #94a3b8;
-    }
-
-    /* Input Field Normalization */
-    .form-group label {
-        font-size: 11px;
-        font-weight: 700;
-        color: #475569;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .required {
-        color: #ef4444;
-    }
-
-    .input-with-icon {
-        position: relative;
-        display: flex;
-        align-items: center;
-    }
-
-    .input-icon {
-        position: absolute;
-        left: 14px;
-        color: #94a3b8;
-        font-size: 14px;
-        pointer-events: none;
-        z-index: 2;
-    }
-
-    .input-with-icon input,
-    .form-group textarea {
-        width: 100%;
-        height: 42px;
-        padding: 8px 12px 8px 40px;
-        font-size: 14px;
-        border: 1px solid #cbd5e1;
-        border-radius: 6px;
-        color: var(--primary-text);
-        background-color: #ffffff;
-        box-sizing: border-box;
-        transition: all 0.2s;
-    }
-
-    .form-group textarea {
-        height: auto;
-        resize: vertical;
-        font-family: inherit;
-        padding: 12px;
-    }
-
-    .form-group textarea:focus {
-        outline: none;
-        border-color: var(--accent-blue);
-        box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
-    }
-
-    /* Readonly Field Variant Modifications */
-    .input-with-icon.locked input {
-        background-color: #f8fafc;
-        border-color: #e2e8f0;
-        color: #334155;
-        cursor: not-allowed;
-    }
-
-    .input-with-icon.locked.alert-date input {
-        color: #b45309;
-        font-weight: 600;
-        background-color: #fffbeb;
-        border-color: #fde68a;
-    }
-    .input-with-icon.locked.alert-date .input-icon {
-        color: #d97706;
-    }
-
-    .input-with-icon.locked.focus-highlight input {
-        background-color: rgba(15, 29, 58, 0.03);
-        color: var(--bg-navy);
-    }
-    .input-with-icon.locked.focus-highlight .input-icon {
-        color: var(--bg-navy);
-    }
-
-    .text-right-wrapper input {
-        padding-right: 14px;
-    }
-
-    .font-mono { font-family: monospace; font-size: 14px; }
-    .font-semibold { font-weight: 600; }
-    .text-right { text-align: right; }
-
-    /* Interactive Accounting Matrix Terminal Grid Layouts */
+    .form-row-dual,
+    .form-row-triple,
     .live-calculation-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
-        margin: 25px 0;
+
+        grid-template-columns: 1fr;
+
     }
 
     .calc-card {
-        background-color: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 16px;
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        transition: all 0.2s;
-    }
 
-    .calc-card .calc-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        color: #475569;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
-        flex-shrink: 0;
-    }
-
-    .calc-info {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
-    
-    .calc-info.wide-input {
         width: 100%;
+
+        box-sizing: border-box;
+
     }
 
-    .calc-card .calc-label {
-        font-size: 11px;
-        text-transform: uppercase;
-        font-weight: 700;
-        color: #64748b;
-        letter-spacing: 0.5px;
-    }
-
-    .calc-card .calc-value {
-        font-size: 20px;
-        font-weight: 700;
-        font-family: monospace;
-        margin-top: 2px;
-    }
-
-    /* Red Pay Container Flag Box */
-    .calc-card.total-highlight {
-        background-color: #fff1f2;
-        border-color: #fecdd3;
-    }
-    .calc-card.total-highlight .calc-icon {
-        background: #ffe4e6;
-        color: #e11d48;
-        border-color: #fda4af;
-    }
-    .calc-card.total-highlight .calc-label { color: #9f1239; }
-    .calc-card.total-highlight .calc-value { color: #e11d48; }
-
-    /* Centered Active Term Cash Input Card Styles */
-    .calc-card.cash-input-card {
-        background-color: #ffffff;
-        border-color: var(--accent-blue);
-        box-shadow: 0 4px 12px rgba(29, 78, 216, 0.06);
-    }
-    .calc-card.cash-input-card .calc-icon {
-        background: rgba(29, 78, 216, 0.05);
-        color: var(--accent-blue);
-        border-color: rgba(29, 78, 216, 0.15);
-    }
-    .calc-card.cash-input-card .calc-label {
-        color: var(--bg-navy);
-        margin-bottom: 4px;
-    }
-    
-    .cash-input {
-        width: 100%;
-        height: 34px;
-        font-size: 18px;
-        font-weight: 700;
-        border: none;
-        border-bottom: 2px solid #cbd5e1;
-        color: var(--bg-navy);
-        background-color: transparent;
-        padding: 0;
-        transition: border-color 0.2s;
-    }
-    
-    .cash-input:focus {
-        outline: none;
-        border-color: var(--accent-blue);
-    }
-
-    /* Green Cash Return Balance Highlight Box */
-    .calc-card.change-highlight {
-        background-color: #f0fdf4;
-        border-color: #bbf7d0;
-    }
-    .calc-card.change-highlight .calc-icon {
-        background: #dcfce7;
-        color: #16a34a;
-        border-color: #86efac;
-    }
-    .calc-card.change-highlight .calc-label { color: #166534; }
-    .calc-card.change-highlight .calc-value { color: #15803d; font-size: 22px; }
-
-    /* Footer Action Button Trays */
     .form-actions-footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        border-top: 1px solid var(--border-classic);
-        padding-top: 20px;
-        margin-top: 15px;
+
+        flex-direction: column;
+
     }
 
-    .btn-secondary {
-        background-color: #ffffff;
-        border: 1px solid #cbd5e1;
-        color: #334155;
-        padding: 11px 22px;
-        font-size: 13px;
-        font-weight: 600;
-        border-radius: 6px;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        transition: all 0.2s;
-    }
-
-    .btn-secondary:hover {
-        background-color: #f8fafc;
-        border-color: #94a3b8;
-        color: var(--bg-navy);
-    }
-
+    .btn-secondary,
     .btn-submit {
-        background-color: var(--bg-navy);
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        color: #ffffff;
-        padding: 11px 26px;
-        font-size: 13px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-radius: 6px;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.2s;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+
+        width: 100%;
+
+        justify-content: center;
+
     }
 
-    .btn-submit:hover {
-        background-color: #1e3a6d;
-        transform: translateY(-1px);
-    }
-    
-    .btn-submit:active {
-        transform: translateY(0);
-    }
+}
 
-    @media (max-width: 640px) {
-        .form-row-dual, .form-row-triple, .live-calculation-grid {
-            grid-template-columns: 1fr;
-        }
-        .calc-card {
-            width: 100%;
-            box-sizing: border-box;
-        }
-    }
 </style>
 
+
 <script>
-    {% comment %} function calculateGrandTotal() {
-        const baseBill = parseFloat(document.getElementById("base_bill_amount").value) || 0;
-        const connection = parseFloat(document.getElementById("connection_fee").value) || 0;
-        const reconnection = parseFloat(document.getElementById("reconnection_fee").value) || 0;
-        const violation = parseFloat(document.getElementById("violation_fee").value) || 0;
 
-        // Sum everything up to get the true current due
-        const totalDue = baseBill + connection + reconnection + violation;
+document.addEventListener("DOMContentLoaded", function () {
 
-        document.getElementById("amount_due").value = totalDue.toFixed(2);
-        document.getElementById("display_amount_due").innerText = totalDue.toFixed(2);
-        
-        return totalDue;
-    }
+    const paymentInput =
+        document.getElementById("amount_paid");
 
-    function calculateChange() {
-        // Run grand total compilation to base math calculations on accurate sums
-        const due = calculateGrandTotal();
-        const paid = parseFloat(document.getElementById("amount_paid").value) || 0;
+    const paymentForm =
+        document.getElementById("paymentForm");
 
-        let change = paid - due;
+    const submitButton =
+        document.getElementById("completePaymentButton");
 
-        if (change < 0) {
-            change = 0;
+    const validationMessage =
+        document.getElementById("paymentValidation");
+
+    const statusCard =
+        document.getElementById("paymentStatusCard");
+
+    const statusIcon =
+        document.getElementById("paymentStatusIcon");
+
+    const statusText =
+        document.getElementById("paymentStatusText");
+
+
+    /*
+    =========================================================
+    GET EXACT BILL AMOUNT
+    =========================================================
+    */
+
+    const exactAmount = parseFloat(
+        "{{ bill.total_amount|floatformat:2 }}"
+    );
+
+
+    /*
+    =========================================================
+    VALIDATE PAYMENT
+    =========================================================
+    */
+
+    function validateExactPayment() {
+
+        const enteredAmount =
+            parseFloat(paymentInput.value);
+
+
+        // Empty input
+        if (
+            paymentInput.value === "" ||
+            Number.isNaN(enteredAmount)
+        ) {
+
+            paymentInput.classList.remove(
+                "payment-valid",
+                "payment-invalid"
+            );
+
+            validationMessage.textContent =
+                "Enter exactly ₱" +
+                exactAmount.toFixed(2);
+
+            validationMessage.style.color =
+                "#64748b";
+
+
+            statusCard.classList.remove(
+                "payment-valid-card",
+                "payment-invalid-card"
+            );
+
+            statusIcon.className =
+                "fa-solid fa-circle-exclamation";
+
+            statusText.textContent =
+                "Waiting for amount";
+
+            submitButton.disabled = true;
+
+            return false;
         }
 
-        document.getElementById("change").value = change.toFixed(2);
-        document.getElementById("change_display").innerText = change.toFixed(2);
-    } {% endcomment %}
 
-    // Initialize setup pipeline on window paint execution
-    window.addEventListener('DOMContentLoaded', () => {
-        calculateGrandTotal();
-    });
+        /*
+        =====================================================
+        EXACT MATCH
+        =====================================================
+        */
+
+        if (enteredAmount === exactAmount) {
+
+            paymentInput.classList.remove(
+                "payment-invalid"
+            );
+
+            paymentInput.classList.add(
+                "payment-valid"
+            );
+
+
+            validationMessage.textContent =
+                "✓ Exact amount accepted";
+
+            validationMessage.style.color =
+                "#15803d";
+
+
+            statusCard.classList.remove(
+                "payment-invalid-card"
+            );
+
+            statusCard.classList.add(
+                "payment-valid-card"
+            );
+
+
+            statusIcon.className =
+                "fa-solid fa-circle-check";
+
+
+            statusText.textContent =
+                "Exact amount verified";
+
+
+            submitButton.disabled = false;
+
+            return true;
+        }
+
+
+        /*
+        =====================================================
+        TOO LITTLE
+        =====================================================
+        */
+
+        if (enteredAmount < exactAmount) {
+
+            paymentInput.classList.remove(
+                "payment-valid"
+            );
+
+            paymentInput.classList.add(
+                "payment-invalid"
+            );
+
+
+            validationMessage.textContent =
+                "✕ Insufficient. Exact amount: ₱" +
+                exactAmount.toFixed(2);
+
+            validationMessage.style.color =
+                "#dc2626";
+
+
+            statusCard.classList.remove(
+                "payment-valid-card"
+            );
+
+            statusCard.classList.add(
+                "payment-invalid-card"
+            );
+
+
+            statusIcon.className =
+                "fa-solid fa-circle-xmark";
+
+
+            statusText.textContent =
+                "Insufficient payment";
+
+
+            submitButton.disabled = true;
+
+            return false;
+        }
+
+
+        /*
+        =====================================================
+        TOO MUCH
+        =====================================================
+        */
+
+        if (enteredAmount > exactAmount) {
+
+            paymentInput.classList.remove(
+                "payment-valid"
+            );
+
+            paymentInput.classList.add(
+                "payment-invalid"
+            );
+
+
+            validationMessage.textContent =
+                "✕ Overpayment not allowed. Exact amount: ₱" +
+                exactAmount.toFixed(2);
+
+            validationMessage.style.color =
+                "#dc2626";
+
+
+            statusCard.classList.remove(
+                "payment-valid-card"
+            );
+
+            statusCard.classList.add(
+                "payment-invalid-card"
+            );
+
+
+            statusIcon.className =
+                "fa-solid fa-circle-xmark";
+
+
+            statusText.textContent =
+                "Overpayment not allowed";
+
+
+            submitButton.disabled = true;
+
+            return false;
+        }
+
+    }
+
+
+    /*
+    =========================================================
+    LIVE VALIDATION
+    =========================================================
+    */
+
+    paymentInput.addEventListener(
+        "input",
+        validateExactPayment
+    );
+
+
+    /*
+    =========================================================
+    FINAL FORM VALIDATION
+    =========================================================
+    */
+
+    paymentForm.addEventListener(
+        "submit",
+        function (event) {
+
+            if (!validateExactPayment()) {
+
+                event.preventDefault();
+
+                alert(
+                    "Payment cannot be processed.\n\n" +
+                    "The customer must pay the exact amount of ₱" +
+                    exactAmount.toFixed(2) +
+                    "."
+                );
+
+                paymentInput.focus();
+
+                return false;
+            }
+
+        }
+    );
+
+
+    /*
+    =========================================================
+    INITIAL STATE
+    =========================================================
+    */
+
+    validateExactPayment();
+
+});
+
 </script>
+
 {% endblock %}

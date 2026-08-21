@@ -9,7 +9,7 @@ from datetime import datetime, date, timedelta
 from django.utils import timezone
 import re
 from .models import Billing, Payment, Notification, MeterReading
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from openpyxl import load_workbook
 from collections import defaultdict
 from django.contrib.auth.hashers import make_password
@@ -1164,26 +1164,76 @@ def process_payment(request, id):
         status="unpaid"
     )
 
+    # Prevent duplicate payment
     if hasattr(bill, "payment"):
-        messages.info(request, "This bill has already been paid.")
-        return redirect("payment")
+        messages.info(
+            request,
+            "This bill has already been paid."
+        )
+        return redirect("payments")
 
     if request.method == "POST":
 
-        amount_paid = Decimal(request.POST.get("amount_paid"))
+        # ---------------------------------------------------------
+        # GET PAYMENT AMOUNT SAFELY
+        # ---------------------------------------------------------
+        raw_amount_paid = request.POST.get("amount_paid", "").strip()
 
-        if amount_paid < bill.total_amount:
-            messages.error(request, "Insufficient payment.")
+        try:
+            amount_paid = Decimal(raw_amount_paid)
+        except (InvalidOperation, TypeError, ValueError):
+            messages.error(
+                request,
+                "Please enter a valid payment amount."
+            )
             return redirect("process_payment", id=id)
 
+        # ---------------------------------------------------------
+        # NORMALIZE TO 2 DECIMAL PLACES
+        # ---------------------------------------------------------
+        amount_paid = amount_paid.quantize(Decimal("0.01"))
+        amount_due = Decimal(bill.total_amount).quantize(Decimal("0.01"))
+
+        # ---------------------------------------------------------
+        # EXACT PAYMENT ONLY
+        # ---------------------------------------------------------
+        if amount_paid != amount_due:
+
+            if amount_paid < amount_due:
+                messages.error(
+                    request,
+                    f"Insufficient payment. "
+                    f"The exact amount required is ₱{amount_due:,.2f}."
+                )
+            else:
+                messages.error(
+                    request,
+                    f"Overpayment is not allowed. "
+                    f"The exact amount required is ₱{amount_due:,.2f}."
+                )
+
+            return redirect("process_payment", id=id)
+
+        # ---------------------------------------------------------
+        # CREATE PAYMENT
+        # ---------------------------------------------------------
         Payment.objects.create(
             billing=bill,
             amount_paid=amount_paid,
             received_by=request.user,
-            remarks=request.POST.get("remarks")
+            remarks=request.POST.get("remarks", "").strip()
         )
 
-        messages.success(request, "Payment processed successfully.")
+        # ---------------------------------------------------------
+        # MARK BILL AS PAID
+        # ---------------------------------------------------------
+        bill.status = "paid"
+        bill.save(update_fields=["status"])
+
+        messages.success(
+            request,
+            f"Payment of ₱{amount_paid:,.2f} processed successfully."
+        )
 
         return redirect("payments")
 
