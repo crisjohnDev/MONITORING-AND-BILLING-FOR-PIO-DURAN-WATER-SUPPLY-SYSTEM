@@ -9,23 +9,33 @@ def login_view(request):
     create_default_admin()
 
     if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
 
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(
+            request,
+            username=username,
+            password=password
+        )
 
         if user is not None:
             login(request, user)
 
             if user.role == 'admin':
                 return redirect('admin_dashboard')
+
             elif user.role == 'staff':
                 return redirect('staff_dashboard')
 
             else:
-                return redirect('login-view')
+                return render(request, 'login.html', {
+                    'error': 'Your account does not have permission to access this system.'
+                })
 
-        return redirect('login-view')
+        # Wrong username or password
+        return render(request, 'login.html', {
+            'error': 'Invalid username or password.'
+        })
 
     return render(request, 'login.html')
 

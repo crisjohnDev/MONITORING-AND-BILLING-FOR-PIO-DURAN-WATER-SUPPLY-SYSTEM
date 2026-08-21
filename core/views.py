@@ -17,7 +17,7 @@ from django.db import transaction
 from django.db.models import Sum, Count
 from django.db.models.functions import Coalesce
 import json
-
+from django.db.models.deletion import ProtectedError
 @login_required
 def admin_dashboard(request):
 
@@ -106,36 +106,152 @@ def customer_list(request):
 
 @login_required
 def add_customer(request):
-    if request.method == "POST":
-
-        # Get selected barangay
-        barangay = Barangay.objects.get(id=request.POST.get("barangay"))
-
-        # Create user
-        user = User.objects.create_user(
-            username=request.POST.get("username"),
-            password=request.POST.get("password"),
-            role="customer",
-        )
-
-        # Create customer
-        Customer.objects.create(
-            user=user,
-            firstname=request.POST.get("firstname"),
-            middlename=request.POST.get("middlename"),
-            lastname=request.POST.get("lastname"),
-            submitter_no=request.POST.get("submitter_no"),
-            barangay=barangay,
-            address=barangay.barangay_name,   # or request.POST.get("address") if you later add an address field
-        )
-
-        messages.success(request, "Customer added successfully.")
-        return redirect("customers")
 
     barangays = Barangay.objects.all()
 
+    if request.method == "POST":
+
+        firstname = request.POST.get("firstname", "").strip()
+        middlename = request.POST.get("middlename", "").strip()
+        lastname = request.POST.get("lastname", "").strip()
+        barangay_id = request.POST.get("barangay")
+        submitter_no = request.POST.get("submitter_no", "").strip()
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "")
+
+        # =========================================================
+        # CHECK FIRST NAME + LAST NAME
+        # =========================================================
+
+        customer_exists = Customer.objects.filter(
+            firstname__iexact=firstname,
+            lastname__iexact=lastname
+        ).exists()
+
+        if customer_exists:
+
+            return render(request, "admin/add_customer.html", {
+                "barangays": barangays,
+                "error": (
+                    f"A customer with the name "
+                    f"{firstname} {lastname} already exists."
+                ),
+                "form_data": request.POST,
+            })
+
+        # =========================================================
+        # CHECK USERNAME
+        # =========================================================
+
+        if User.objects.filter(username__iexact=username).exists():
+
+            return render(request, "admin/add_customer.html", {
+                "barangays": barangays,
+                "error": "Username already exists. Please choose another username.",
+                "form_data": request.POST,
+            })
+
+        # =========================================================
+        # CHECK SUBMITTER NUMBER
+        # =========================================================
+
+        if Customer.objects.filter(
+            submitter_no__iexact=submitter_no
+        ).exists():
+
+            return render(request, "admin/add_customer.html", {
+                "barangays": barangays,
+                "error": "Submitter No. already exists. Please try again.",
+                "form_data": request.POST,
+            })
+
+        # =========================================================
+        # CHECK BARANGAY
+        # =========================================================
+
+        try:
+            barangay = Barangay.objects.get(id=barangay_id)
+
+        except Barangay.DoesNotExist:
+
+            return render(request, "admin/add_customer.html", {
+                "barangays": barangays,
+                "error": "Please select a valid barangay.",
+                "form_data": request.POST,
+            })
+
+        # =========================================================
+        # CHECK PASSWORD
+        # =========================================================
+
+        if not password:
+
+            return render(request, "admin/add_customer.html", {
+                "barangays": barangays,
+                "error": "Password is required.",
+                "form_data": request.POST,
+            })
+
+        if len(password) < 8:
+
+            return render(request, "admin/add_customer.html", {
+                "barangays": barangays,
+                "error": "Password must be at least 8 characters long.",
+                "form_data": request.POST,
+            })
+
+        if not any(c.isupper() for c in password):
+
+            return render(request, "admin/add_customer.html", {
+                "barangays": barangays,
+                "error": "Password must contain at least one capital letter.",
+                "form_data": request.POST,
+            })
+
+        if not any(c.isdigit() for c in password):
+
+            return render(request, "admin/add_customer.html", {
+                "barangays": barangays,
+                "error": "Password must contain at least one number.",
+                "form_data": request.POST,
+            })
+
+        if not any(c in "@$!%*?&" for c in password):
+
+            return render(request, "admin/add_customer.html", {
+                "barangays": barangays,
+                "error": "Password must contain at least one special character.",
+                "form_data": request.POST,
+            })
+
+        # =========================================================
+        # CREATE USER
+        # =========================================================
+
+        user = User.objects.create_user(
+            username=username,
+            password=password,
+            role="customer",
+        )
+
+        # =========================================================
+        # CREATE CUSTOMER
+        # =========================================================
+
+        Customer.objects.create(
+            user=user,
+            firstname=firstname,
+            middlename=middlename,
+            lastname=lastname,
+            submitter_no=submitter_no,
+            barangay=barangay,
+            address=barangay.barangay_name,
+        )
+
+        return redirect("customers")
+
     return render(request, "admin/add_customer.html", {
-        "barangays": barangays
+        "barangays": barangays,
     })
 
 @login_required
@@ -444,17 +560,22 @@ def create_bill(request):
     if request.method == "POST":
 
         try:
+
             # --------------------------------------------------
             # BILLING MONTH
             # --------------------------------------------------
-            billing_month_raw = request.POST.get("billing_month")
+            billing_month_raw = request.POST.get("billing_month", "").strip()
 
             if not billing_month_raw:
-                messages.error(
+                return render(
                     request,
-                    "Billing month is required."
+                    "admin/create_bill.html",
+                    {
+                        "customer_data": [],
+                        "barangays": [],
+                        "error": "Billing month is required.",
+                    }
                 )
-                return redirect("create_bill")
 
             billing_month = datetime.strptime(
                 billing_month_raw,
@@ -464,14 +585,18 @@ def create_bill(request):
             # --------------------------------------------------
             # DUE DATE
             # --------------------------------------------------
-            due_date_raw = request.POST.get("due_date")
+            due_date_raw = request.POST.get("due_date", "").strip()
 
             if not due_date_raw:
-                messages.error(
+                return render(
                     request,
-                    "Due date is required."
+                    "admin/create_bill.html",
+                    {
+                        "customer_data": [],
+                        "barangays": [],
+                        "error": "Due date is required.",
+                    }
                 )
-                return redirect("create_bill")
 
             due_date = datetime.strptime(
                 due_date_raw,
@@ -481,16 +606,23 @@ def create_bill(request):
             # --------------------------------------------------
             # RATE PER CUBIC METER
             # --------------------------------------------------
-            rate_per_cubic = Decimal(
-                request.POST.get("rate_per_cubic") or "25.00"
-            )
+            rate_raw = request.POST.get(
+                "rate_per_cubic",
+                "25.00"
+            ).strip()
+
+            rate_per_cubic = Decimal(rate_raw or "25.00")
 
             if rate_per_cubic < 0:
-                messages.error(
+                return render(
                     request,
-                    "Rate per cubic meter cannot be negative."
+                    "admin/create_bill.html",
+                    {
+                        "customer_data": [],
+                        "barangays": [],
+                        "error": "Rate per cubic meter cannot be negative.",
+                    }
                 )
-                return redirect("create_bill")
 
             # --------------------------------------------------
             # CONSUMER DATA
@@ -505,18 +637,28 @@ def create_bill(request):
                     consumer_data_raw
                 )
             except json.JSONDecodeError:
-                messages.error(
+
+                return render(
                     request,
-                    "Invalid consumer billing data."
+                    "admin/create_bill.html",
+                    {
+                        "customer_data": [],
+                        "barangays": [],
+                        "error": "Invalid consumer billing data.",
+                    }
                 )
-                return redirect("create_bill")
 
             if not consumer_data:
-                messages.error(
+
+                return render(
                     request,
-                    "No consumer entries were submitted."
+                    "admin/create_bill.html",
+                    {
+                        "customer_data": [],
+                        "barangays": [],
+                        "error": "No consumer entries were submitted.",
+                    }
                 )
-                return redirect("create_bill")
 
             created = 0
             skipped = 0
@@ -535,10 +677,15 @@ def create_bill(request):
                     # GET CUSTOMER
                     # ------------------------------------------
                     try:
-                        customer = Customer.objects.get(
-                            pk=customer_id
+
+                        customer = (
+                            Customer.objects
+                            .select_related("barangay")
+                            .get(pk=customer_id)
                         )
+
                     except Customer.DoesNotExist:
+
                         skipped += 1
                         continue
 
@@ -554,6 +701,14 @@ def create_bill(request):
                         continue
 
                     # ==========================================
+                    # CUSTOMER STATUS
+                    # ==========================================
+
+                    is_new_customer = (
+                        str(customer.status).lower() == "new"
+                    )
+
+                    # ==========================================
                     # READINGS
                     # ==========================================
 
@@ -562,25 +717,75 @@ def create_bill(request):
                             data.get(
                                 "previous_reading",
                                 "0.00"
-                            )
+                            ) or "0.00"
                         )
                     )
 
-                    current_reading = Decimal(
-                        str(
-                            data.get(
-                                "current_reading",
-                                "0.00"
-                            )
-                        )
+                    current_reading_raw = data.get(
+                        "current_reading",
+                        ""
                     )
 
-                    # ------------------------------------------
-                    # VALIDATE READING
-                    # ------------------------------------------
-                    if current_reading < previous_reading:
-                        skipped += 1
-                        continue
+                    # ------------------------------------------------
+                    # NEW CUSTOMER
+                    #
+                    # Current reading is OPTIONAL.
+                    #
+                    # Blank = 0.00
+                    # ------------------------------------------------
+                    if is_new_customer:
+
+                        if (
+                            current_reading_raw is None
+                            or str(current_reading_raw).strip() == ""
+                        ):
+                            current_reading = Decimal("0.00")
+                        else:
+                            current_reading = Decimal(
+                                str(current_reading_raw)
+                            )
+
+                        # New customer should start from zero
+                        previous_reading = Decimal("0.00")
+
+                    # ------------------------------------------------
+                    # EXISTING CUSTOMER
+                    #
+                    # Current reading is REQUIRED.
+                    # ------------------------------------------------
+                    else:
+
+                        if (
+                            current_reading_raw is None
+                            or str(current_reading_raw).strip() == ""
+                        ):
+
+                            skipped += 1
+                            continue
+
+                        current_reading = Decimal(
+                            str(current_reading_raw)
+                        )
+
+                        # --------------------------------------------
+                        # CURRENT CANNOT BE LOWER THAN PREVIOUS
+                        # --------------------------------------------
+                        if current_reading < previous_reading:
+
+                            skipped += 1
+                            continue
+
+                    # ==========================================
+                    # CALCULATE CONSUMPTION
+                    # ==========================================
+
+                    consumption = (
+                        current_reading -
+                        previous_reading
+                    )
+
+                    if consumption < 0:
+                        consumption = Decimal("0.00")
 
                     # ==========================================
                     # ADDITIONAL FEES
@@ -591,7 +796,7 @@ def create_bill(request):
                             data.get(
                                 "connection_fee",
                                 "0.00"
-                            )
+                            ) or "0.00"
                         )
                     )
 
@@ -600,7 +805,7 @@ def create_bill(request):
                             data.get(
                                 "reconnection_fee",
                                 "0.00"
-                            )
+                            ) or "0.00"
                         )
                     )
 
@@ -609,7 +814,7 @@ def create_bill(request):
                             data.get(
                                 "violation_fee",
                                 "0.00"
-                            )
+                            ) or "0.00"
                         )
                     )
 
@@ -618,7 +823,7 @@ def create_bill(request):
                             data.get(
                                 "penalty_fee",
                                 "0.00"
-                            )
+                            ) or "0.00"
                         )
                     )
 
@@ -627,12 +832,16 @@ def create_bill(request):
                     # ==========================================
 
                     MeterReading.objects.update_or_create(
+
                         customer=customer,
+
                         billing_month=billing_month,
+
                         defaults={
                             "previous_reading": previous_reading,
                             "current_reading": current_reading,
                         }
+
                     )
 
                     # ==========================================
@@ -640,28 +849,36 @@ def create_bill(request):
                     # ==========================================
 
                     Billing.objects.create(
+
                         customer=customer,
+
                         billing_month=billing_month,
 
                         previous_reading=previous_reading,
+
                         current_reading=current_reading,
 
                         rate_per_cubic=rate_per_cubic,
 
                         connection_fee=connection_fee,
+
                         reconnection_fee=reconnection_fee,
+
                         violation_fee=violation_fee,
+
                         penalty_fee=penalty_fee,
 
                         due_date=due_date,
+
                         status="unpaid",
+
                     )
 
                     # ==========================================
                     # UPDATE CUSTOMER STATUS
                     # ==========================================
 
-                    if customer.status == "new":
+                    if is_new_customer:
 
                         customer.status = "old"
 
@@ -672,32 +889,24 @@ def create_bill(request):
                     created += 1
 
             # ==================================================
-            # SUCCESS MESSAGE
+            # REDIRECT
             # ==================================================
 
-            messages.success(
-                request,
-                f"{created} bill(s) generated successfully. "
-                f"{skipped} skipped."
-            )
+            return redirect("create_bill")
+
+        # ======================================================
+        # INVALID DATA
+        # ======================================================
+        except (ValueError, Decimal.InvalidOperation):
 
             return redirect("create_bill")
 
-        except ValueError:
-
-            messages.error(
-                request,
-                "Invalid date or numeric value."
-            )
-
-            return redirect("create_bill")
-
+        # ======================================================
+        # OTHER ERROR
+        # ======================================================
         except Exception as e:
 
-            messages.error(
-                request,
-                f"Unable to generate bills: {str(e)}"
-            )
+            print("CREATE BILL ERROR:", e)
 
             return redirect("create_bill")
 
@@ -739,7 +948,19 @@ def create_bill(request):
             .first()
         )
 
-        if last_reading:
+        # ------------------------------------------------------
+        # NEW CUSTOMER
+        # ------------------------------------------------------
+
+        if str(customer.status).lower() == "new":
+
+            previous_reading = Decimal("0.00")
+
+        # ------------------------------------------------------
+        # EXISTING CUSTOMER
+        # ------------------------------------------------------
+
+        elif last_reading:
 
             previous_reading = (
                 last_reading.current_reading
@@ -807,6 +1028,7 @@ def create_bill(request):
                 if current_reading is not None
                 else ""
             ),
+
         })
 
     # ==========================================================
@@ -855,8 +1077,13 @@ def payment(request):
 
     billings = (
         Billing.objects
-        .select_related("customer")
-        .filter(status="unpaid")
+        .select_related(
+            "customer",
+            "customer__barangay"
+        )
+        .filter(
+            status="unpaid"
+        )
         .order_by(
             "customer__firstname",
             "-billing_month"
@@ -869,20 +1096,20 @@ def payment(request):
 
     for bill in billings:
 
-        # Check if overdue
         if (
             bill.due_date < today
-            and (bill.penalty_fee or Decimal("0.00"))
-            == Decimal("0.00")
+            and (
+                bill.penalty_fee or Decimal("0.00")
+            ) == Decimal("0.00")
         ):
 
-            # 10% penalty based on rate per cubic meter
+            # 10% penalty
             bill.penalty_fee = (
                 bill.rate_per_cubic
                 * Decimal("0.10")
             )
 
-            # save() automatically recalculates total_amount
+            # save() recalculates total_amount
             bill.save()
 
     # ==========================================================
@@ -891,13 +1118,27 @@ def payment(request):
 
     billing_months = (
         Billing.objects
-        .filter(status="unpaid")
+        .filter(
+            status="unpaid"
+        )
         .values_list(
             "billing_month",
             flat=True
         )
         .distinct()
-        .order_by("-billing_month")
+        .order_by(
+            "-billing_month"
+        )
+    )
+
+    # ==========================================================
+    # GET AVAILABLE BARANGAYS
+    # ==========================================================
+
+    barangays = (
+        Barangay.objects
+        .all()
+        .order_by("barangay_name")
     )
 
     # ==========================================================
@@ -910,6 +1151,7 @@ def payment(request):
         {
             "billings": billings,
             "billing_months": billing_months,
+            "barangays": barangays,
         }
     )
 
@@ -1071,56 +1313,239 @@ def official_receipt(request, payment_id):
 @login_required
 def post_notification(request):
 
-    customers = Customer.objects.order_by("firstname")
-    notifications = Notification.objects.select_related("customer").order_by("-created_at")
+    # ==========================================================
+    # GET CUSTOMERS
+    # ==========================================================
 
-    # Get unique barangays from customer addresses
-    barangays = sorted({
-        customer.address.split(",")[1].strip()
-        for customer in customers
-        if len(customer.address.split(",")) >= 2
-    })
+    customers = (
+        Customer.objects
+        .select_related("barangay")
+        .order_by("firstname", "lastname")
+    )
+
+    # ==========================================================
+    # GET BARANGAYS DIRECTLY FROM DATABASE
+    #
+    # IMPORTANT:
+    # DO NOT BUILD BARANGAY LIST FROM customer.address
+    #
+    # This guarantees that ALL Barangay records appear,
+    # including barangays that currently have no customers.
+    # ==========================================================
+
+    barangays = (
+        Barangay.objects
+        .order_by("barangay_name")
+    )
+
+    # ==========================================================
+    # GET NOTIFICATIONS
+    # ==========================================================
+
+    notifications = (
+        Notification.objects
+        .select_related("customer")
+        .order_by("-created_at")
+    )
+
+    # ==========================================================
+    # POST NOTIFICATION
+    # ==========================================================
 
     if request.method == "POST":
 
-        target = request.POST.get("target")
-        customer_id = request.POST.get("customer")
-        barangay = request.POST.get("barangay")
-        status = request.POST.get("status")
-        title = request.POST.get("title")
-        message = request.POST.get("message")
+        # ------------------------------------------------------
+        # BASIC FORM VALUES
+        # ------------------------------------------------------
+
+        target = request.POST.get(
+            "target",
+            ""
+        ).strip()
+
+        customer_id = request.POST.get(
+            "customer",
+            ""
+        ).strip()
+
+        barangay_id = request.POST.get(
+            "barangay",
+            ""
+        ).strip()
+
+        status = request.POST.get(
+            "status",
+            ""
+        ).strip()
+
+        title = request.POST.get(
+            "title",
+            ""
+        ).strip()
+
+        notification_message = request.POST.get(
+            "message",
+            ""
+        ).strip()
+
+        # ------------------------------------------------------
+        # BASIC VALIDATION
+        # ------------------------------------------------------
+
+        if not target:
+            return redirect("post-notifacation")
+
+        if not status:
+            return redirect("post-notifacation")
+
+        if not title:
+            return redirect("post-notifacation")
+
+        if not notification_message:
+            return redirect("post-notifacation")
+
+        # ------------------------------------------------------
+        # DEFAULT VALUES
+        # ------------------------------------------------------
 
         customer = None
+        selected_barangay = None
 
-        if target == "customer":
-            if not customer_id:
-                messages.error(request, "Please select a customer.")
-                return redirect("post-notifacation")
+        # ======================================================
+        # TARGET: ALL CUSTOMERS
+        # ======================================================
 
-            customer = Customer.objects.get(id=customer_id)
+        if target == "all":
+
+            customer = None
+            selected_barangay = None
+
+        # ======================================================
+        # TARGET: BARANGAY
+        # ======================================================
 
         elif target == "barangay":
-            if not barangay:
-                messages.error(request, "Please select a barangay.")
+
+            if not barangay_id:
                 return redirect("post-notifacation")
 
+            # --------------------------------------------------
+            # Get REAL Barangay record from database
+            # --------------------------------------------------
+
+            try:
+
+                selected_barangay = Barangay.objects.get(
+                    id=barangay_id
+                )
+
+            except Barangay.DoesNotExist:
+
+                return redirect("post-notifacation")
+
+            customer = None
+
+        # ======================================================
+        # TARGET: SINGLE CUSTOMER
+        # ======================================================
+
+        elif target == "customer":
+
+            if not customer_id:
+                return redirect("post-notifacation")
+
+            # --------------------------------------------------
+            # Get REAL Customer record
+            # --------------------------------------------------
+
+            try:
+
+                customer = (
+                    Customer.objects
+                    .select_related("barangay")
+                    .get(id=customer_id)
+                )
+
+            except Customer.DoesNotExist:
+
+                return redirect("post-notifacation")
+
+            selected_barangay = None
+
+        # ======================================================
+        # INVALID TARGET
+        # ======================================================
+
+        else:
+
+            return redirect("post-notifacation")
+
+        # ======================================================
+        # CREATE NOTIFICATION
+        # ======================================================
+
+        # ------------------------------------------------------
+        # IMPORTANT
+        #
+        # If Notification.barangay is a CharField, save the
+        # actual Barangay name.
+        #
+        # Example:
+        #
+        # Caratagan
+        # Agol
+        # San Ramon
+        #
+        # We do NOT save an address-parsed value anymore.
+        # ------------------------------------------------------
+
+        notification_barangay = None
+
+        if selected_barangay:
+
+            notification_barangay = (
+                selected_barangay.barangay_name
+            )
+
+        # ------------------------------------------------------
+        # CREATE
+        # ------------------------------------------------------
+
         Notification.objects.create(
+
             target=target,
+
             customer=customer,
-            barangay=barangay if target == "barangay" else None,
+
+            barangay=notification_barangay,
+
             status=status,
+
             title=title,
-            message=message,
+
+            message=notification_message,
+
         )
 
-        messages.success(request, "Notification posted successfully.")
+        # ======================================================
+        # REDIRECT
+        # ======================================================
+
         return redirect("post-notifacation")
 
-    return render(request, "admin/post_notification.html", {
-        "customers": customers,
-        "barangays": barangays,
-        "notifications": notifications,
-    })
+    # ==========================================================
+    # RENDER
+    # ==========================================================
+
+    return render(
+        request,
+        "admin/post_notification.html",
+        {
+            "customers": customers,
+            "barangays": barangays,
+            "notifications": notifications,
+        }
+    )
 
 @login_required
 def delete_notification(request, pk):
@@ -1209,48 +1634,257 @@ def unpaid_report(request):
 
 @login_required
 def barangay_list(request):
+
     barangays_list = Barangay.objects.all()
-    return render(request, "admin/barangays.html", {"barangays_list":barangays_list})
+
+    # Get one-time messages from session
+    error = request.session.pop("brgy_error", None)
+    success = request.session.pop("brgy_success", None)
+
+    return render(
+        request,
+        "admin/barangays.html",
+        {
+            "barangays_list": barangays_list,
+            "error": error,
+            "success": success,
+        }
+    )
 
 @login_required
 def add_brgy(request):
+
     if request.method == "POST":
-        try:
-            Barangay.objects.create(
-                barangay_name=request.POST.get("barangay_name"),
-                municipality=request.POST.get("municipality"),
-                province=request.POST.get("province"),
+
+        raw_barangay_name = request.POST.get(
+            "barangay_name",
+            ""
+        ).strip()
+
+        municipality = request.POST.get(
+            "municipality",
+            ""
+        ).strip()
+
+        province = request.POST.get(
+            "province",
+            ""
+        ).strip()
+
+        # =========================================================
+        # REQUIRED NAME
+        # =========================================================
+
+        if not raw_barangay_name:
+
+            return render(
+                request,
+                "components/brgy_form.html",
+                {
+                    "brgy": None,
+                    "error": "Barangay name is required.",
+                    "form_data": request.POST,
+                }
             )
 
-            messages.success(request, "Barangay added successfully.")
+        # =========================================================
+        # NORMALIZE NAME
+        # =========================================================
+
+        barangay_name = raw_barangay_name
+
+        if barangay_name.lower().startswith("barangay "):
+
+            barangay_name = barangay_name[9:].strip()
+
+        barangay_name = barangay_name.title()
+
+        barangay_name = f"Barangay {barangay_name}"
+
+        # =========================================================
+        # DUPLICATE CHECK
+        # =========================================================
+
+        if Barangay.objects.filter(
+            barangay_name__iexact=barangay_name
+        ).exists():
+
+            return render(
+                request,
+                "components/brgy_form.html",
+                {
+                    "brgy": None,
+                    "error": f"{barangay_name} already exists.",
+                    "form_data": request.POST,
+                }
+            )
+
+        # =========================================================
+        # SAVE
+        # =========================================================
+
+        try:
+
+            Barangay.objects.create(
+                barangay_name=barangay_name,
+                municipality=municipality,
+                province=province,
+            )
+
             return redirect("brgy_list")
 
-        except IntegrityError as e:
-            if "barangay_name" in str(e):
-                messages.error(request, "Barangay already exists.")
-            else:
-                messages.error(request, "Unable to save the record.")
+        except IntegrityError:
 
-            return render(request, "components/brgy_form.html", {
-                "brgy": request.POST
-            })
+            return render(
+                request,
+                "components/brgy_form.html",
+                {
+                    "brgy": None,
+                    "error": "Unable to save the barangay record.",
+                    "form_data": request.POST,
+                }
+            )
 
-    return render(request, "components/brgy_form.html")
+    # =============================================================
+    # INITIAL ADD PAGE
+    # =============================================================
 
+    return render(
+        request,
+        "components/brgy_form.html",
+        {
+            "brgy": None,
+            "form_data": {},
+        }
+    )
 @login_required
 def edit_brgy(request, pk):
+
     brgy = get_object_or_404(Barangay, pk=pk)
 
     if request.method == "POST":
-        brgy.barangay_name=request.POST.get('barangay_name')
-        brgy.save()
 
-        return redirect('brgy_list')
-    return render(request, "components/brgy_form.html", {"brgy":brgy})
+        raw_barangay_name = request.POST.get(
+            "barangay_name",
+            ""
+        ).strip()
+
+        municipality = request.POST.get(
+            "municipality",
+            ""
+        ).strip()
+
+        province = request.POST.get(
+            "province",
+            ""
+        ).strip()
+
+        # =========================================================
+        # CHECK BARANGAY NAME
+        # =========================================================
+
+        if not raw_barangay_name:
+
+            return render(
+                request,
+                "components/brgy_form.html",
+                {
+                    "brgy": brgy,
+                    "error": "Barangay name is required.",
+                    "form_data": request.POST,
+                }
+            )
+
+        # =========================================================
+        # NORMALIZE BARANGAY NAME
+        #
+        # Agol
+        # agol
+        # AGOL
+        # Barangay Agol
+        #
+        # ALL BECOME:
+        #
+        # Barangay Agol
+        # =========================================================
+
+        barangay_name = raw_barangay_name
+
+        if barangay_name.lower().startswith("barangay "):
+
+            barangay_name = barangay_name[9:].strip()
+
+        barangay_name = barangay_name.title()
+
+        barangay_name = f"Barangay {barangay_name}"
+
+        # =========================================================
+        # CHECK DUPLICATE BARANGAY
+        #
+        # Exclude the CURRENT barangay being edited.
+        # =========================================================
+
+        duplicate_exists = Barangay.objects.filter(
+            barangay_name__iexact=barangay_name
+        ).exclude(
+            pk=brgy.pk
+        ).exists()
+
+        if duplicate_exists:
+
+            return render(
+                request,
+                "components/brgy_form.html",
+                {
+                    "brgy": brgy,
+                    "error": f"{barangay_name} already exists.",
+                    "form_data": request.POST,
+                }
+            )
+
+        # =========================================================
+        # SAVE CHANGES
+        # =========================================================
+
+        try:
+
+            brgy.barangay_name = barangay_name
+            brgy.municipality = municipality
+            brgy.province = province
+
+            brgy.save()
+
+            return redirect("brgy_list")
+
+        except IntegrityError:
+
+            return render(
+                request,
+                "components/brgy_form.html",
+                {
+                    "brgy": brgy,
+                    "error": "Unable to update the barangay record.",
+                    "form_data": request.POST,
+                }
+            )
+
+    # =============================================================
+    # GET REQUEST
+    # =============================================================
+
+    return render(
+        request,
+        "components/brgy_form.html",
+        {
+            "brgy": brgy,
+            "form_data": {},
+        }
+    )
 
 @login_required
 def delete_brgy(request, pk):
 
+    # Only allow POST
     if request.method != "POST":
         return redirect("brgy_list")
 
@@ -1261,13 +1895,33 @@ def delete_brgy(request, pk):
 
     barangay_name = brgy.barangay_name
 
-    brgy.delete()
+    try:
 
-    messages.success(
-        request,
-        f"{barangay_name} deleted successfully."
-    )
+        # Try deleting the Barangay
+        brgy.delete()
 
+        # Store success temporarily in session
+        request.session["brgy_success"] = (
+            f"{barangay_name} deleted successfully."
+        )
+
+    except ProtectedError:
+
+        # Count customers currently using this Barangay
+        customer_count = Customer.objects.filter(
+            barangay=brgy
+        ).count()
+
+        # Store error temporarily in session
+        request.session["brgy_error"] = (
+            f"Cannot delete {barangay_name}. "
+            f"It is currently assigned to "
+            f"{customer_count} customer(s). "
+            f"Please reassign the customer(s) to another "
+            f"Barangay before deleting this record."
+        )
+
+    # ALWAYS redirect back to Barangay list
     return redirect("brgy_list")
 
 @login_required

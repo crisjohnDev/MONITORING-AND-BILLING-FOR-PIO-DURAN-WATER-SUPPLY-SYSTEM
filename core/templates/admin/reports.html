@@ -24,20 +24,24 @@
             </div>
         </div>
         
-        <div class="export-actions" style="display: flex; gap: 8px;">
+        {% comment %} <div class="export-actions" style="display: flex; gap: 8px;">
             <button class="btn-report-tool btn-print" onclick="window.print()">
                 <i class="fa-solid fa-print"></i> Print Statement Ledger
             </button>
-        </div>
+        </div> {% endcomment %}
         <div class="export-actions" style="display:flex; gap:10px;">
 
-            <a href="{% url 'paid_report' %}" class="btn-report-tool">
-                <i class="fa-solid fa-file-pdf"></i>
+            <!-- PAID REPORT -->
+            <a href="{% url 'paid_report' %}"
+            class="btn-report-tool paid-report-btn">
+                <i class="fa-solid fa-file-circle-check"></i>
                 Paid Report
             </a>
 
-            <a href="{% url 'unpaid_report' %}" class="btn-report-tool">
-                <i class="fa-solid fa-file-pdf"></i>
+            <!-- UNPAID REPORT -->
+            <a href="{% url 'unpaid_report' %}"
+            class="btn-report-tool unpaid-report-btn">
+                <i class="fa-solid fa-file-circle-xmark"></i>
                 Unpaid Report
             </a>
 
@@ -225,7 +229,35 @@
         vertical-align: middle;
     }
     .remarks-text.empty-remarks { color: #cbd5e1; text-align: center; display: block; }
+    /* =========================================================
+    PAID / UNPAID REPORT BUTTONS
+    ========================================================= */
 
+    /* Paid Report */
+    .btn-report-tool.paid-report-btn {
+        background-color: #16a34a;
+        border-color: #16a34a;
+        color: #ffffff;
+    }
+
+    .btn-report-tool.paid-report-btn:hover {
+        background-color: #15803d;
+        border-color: #15803d;
+        color: #ffffff;
+    }
+
+    /* Unpaid Report */
+    .btn-report-tool.unpaid-report-btn {
+        background-color: #dc2626;
+        border-color: #dc2626;
+        color: #ffffff;
+    }
+
+    .btn-report-tool.unpaid-report-btn:hover {
+        background-color: #b91c1c;
+        border-color: #b91c1c;
+        color: #ffffff;
+    }
     /* Print Viewport Style Overrides */
     @media print {
         header, .action-bar, .metric-icon, .admin-profile, .report-summary-grid { display: none !important; }

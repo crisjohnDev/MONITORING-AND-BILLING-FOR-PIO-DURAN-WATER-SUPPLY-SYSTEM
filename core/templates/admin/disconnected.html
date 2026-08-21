@@ -20,8 +20,13 @@
     <!-- Interface Operational Control Bar Area -->
     <div class="action-bar">
         <div class="management-controls">
-            <button type="button" class="btn-control secondary" onclick="window.print()">
-                <i class="fa-solid fa-print"></i> Print Disconnected Registry
+            <button 
+                type="button" 
+                class="btn-control secondary" 
+                onclick="window.print()"
+            >
+                <i class="fa-solid fa-print"></i> 
+                Print Disconnected Registry
             </button>
         </div>
 
@@ -138,14 +143,30 @@
     }
 
     .btn-control.secondary {
-        background-color: #ffffff;
-        color: var(--bg-navy);
-        border: 1px solid var(--border-classic);
+        background-color: #1d4ed8;
+        color: #ffffff;
+        border: 1px solid #1d4ed8;
+        box-shadow: 0 2px 5px rgba(29, 78, 216, 0.15);
     }
 
+    .btn-control.secondary:active {
+        background-color: #1e3a8a;
+        border-color: #1e3a8a;
+        color: #ffffff;
+        transform: translateY(0);
+    }
+
+    .btn-control.secondary i {
+        color: #ffffff;
+    }
+
+
     .btn-control.secondary:hover {
-        background-color: #f8fafc;
-        border-color: #cbd5e1;
+        background-color: #1e40af;
+        border-color: #1e40af;
+        color: #ffffff;
+        box-shadow: 0 4px 10px rgba(29, 78, 216, 0.25);
+        transform: translateY(-1px);
     }
 
     .search-wrapper {

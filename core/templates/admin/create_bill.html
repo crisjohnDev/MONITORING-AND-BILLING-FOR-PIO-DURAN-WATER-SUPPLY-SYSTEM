@@ -183,6 +183,26 @@
                             <i class="fa-solid fa-circle-dot"></i> Unsaved Changes
                         </span>
                     </div>
+                                            <div
+                            id="new-connection-notice"
+                            style="
+                                display: none;
+                                margin-top: 10px;
+                                padding: 10px 12px;
+                                border: 1px solid #fde68a;
+                                background: #fffbeb;
+                                color: #92400e;
+                                border-radius: 4px;
+                                font-size: 12px;
+                            "
+                        >
+                            <i class="fa-solid fa-circle-info"></i>
+
+                            <strong>New Connection:</strong>
+                            Current meter reading is not required for this customer.
+                            The initial consumption will be recorded as
+                            <strong>0.00 m³</strong>.
+                        </div>
                     
                     <div class="form-row-dual" style="display: flex; gap: 10px;">
                         <div class="form-group" style="flex: 1;">
@@ -192,8 +212,29 @@
                                 <input type="number" step="0.01" id="previous_reading" readonly value="0.00" style="width: 100%; border: none; background: transparent; padding: 8px;">
                             </div>
                         </div>
+
                         <div class="form-group" style="flex: 1;">
-                            <label style="font-size: 12px;">Current Reading (m³) <span class="required" style="color: #ef4444;">*</span></label>
+                            <label style="font-size: 12px;">
+                                Current Reading (m³)
+                                <span
+                                    id="current-reading-required"
+                                    class="required"
+                                    style="color: #ef4444;"
+                                >*</span>
+
+                                <span
+                                    id="current-reading-optional"
+                                    style="
+                                        display: none;
+                                        color: #64748b;
+                                        font-size: 10px;
+                                        font-weight: 500;
+                                        text-transform: uppercase;
+                                    "
+                                >
+                                    Optional for New Connection
+                                </span>
+                            </label>
                             <div class="input-with-icon" style="display: flex; align-items: center; border: 1px solid var(--border-classic); border-radius: 4px;">
                                 <span class="currency-prefix" style="padding: 8px; color: var(--secondary-text);"><i class="fa-solid fa-gauge"></i></span>
                                 <input type="number" step="0.01" id="current_reading" oninput="calculateLiveBillSummary()" style="width: 100%; border: none; padding: 8px;">
@@ -330,32 +371,164 @@
     }
 
     function selectConsumerRow(element) {
+
         document.querySelectorAll(".consumer-option").forEach(el => {
+
             el.style.backgroundColor = "transparent";
+
             el.classList.remove("selected");
+
         });
 
         element.classList.add("selected");
-        element.style.backgroundColor = "#e0f2fe";
-        
-        currentlyActiveConsumerNode = element;
-        const consumerId = element.getAttribute("data-value");
-        const prevReading = parseFloat(element.getAttribute("data-prev") || 0);
 
-        document.getElementById("previous_reading").value = prevReading.toFixed(2);
+        element.style.backgroundColor = "#e0f2fe";
+
+        currentlyActiveConsumerNode = element;
+
+        const consumerId = element.getAttribute("data-value");
+
+        const prevReading = parseFloat(
+            element.getAttribute("data-prev") || 0
+        );
+
+        const nameLabel = element.querySelector(".name-label");
+
+        const customerStatusText = nameLabel
+            ? nameLabel.innerText.toLowerCase()
+            : "";
+
+        const isNewCustomer =
+            customerStatusText.includes("new");
+
+        // ======================================================
+        // PREVIOUS READING
+        // ======================================================
+
+        if (isNewCustomer) {
+
+            document.getElementById(
+                "previous_reading"
+            ).value = "0.00";
+
+        } else {
+
+            document.getElementById(
+                "previous_reading"
+            ).value = prevReading.toFixed(2);
+
+        }
+
+        // ======================================================
+        // CURRENT READING REQUIREMENT
+        // ======================================================
+
+        const currentReadingInput =
+            document.getElementById("current_reading");
+
+        const requiredIndicator =
+            document.getElementById(
+                "current-reading-required"
+            );
+
+        const optionalIndicator =
+            document.getElementById(
+                "current-reading-optional"
+            );
+
+        const newConnectionNotice =
+            document.getElementById(
+                "new-connection-notice"
+            );
+
+        if (isNewCustomer) {
+
+            // ----------------------------------------------
+            // NEW CONNECTION
+            // ----------------------------------------------
+
+            currentReadingInput.removeAttribute("required");
+
+            requiredIndicator.style.display = "none";
+
+            optionalIndicator.style.display = "inline";
+
+            newConnectionNotice.style.display = "block";
+
+            currentReadingInput.placeholder =
+                "Optional for new connection";
+
+        } else {
+
+            // ----------------------------------------------
+            // EXISTING CONNECTION
+            // ----------------------------------------------
+
+            currentReadingInput.setAttribute(
+                "required",
+                "required"
+            );
+
+            requiredIndicator.style.display = "inline";
+
+            optionalIndicator.style.display = "none";
+
+            newConnectionNotice.style.display = "none";
+
+            currentReadingInput.placeholder =
+                "Enter current meter reading";
+
+        }
+
+        // ======================================================
+        // RESTORE PREVIOUSLY PROCESSED DATA
+        // ======================================================
 
         if (processedConsumerLedger[consumerId]) {
-            const data = processedConsumerLedger[consumerId];
-            document.getElementById("current_reading").value = data.current_reading;
-            document.getElementById("connection_fee").value = data.connection_fee;
-            document.getElementById("reconnection_fee").value = data.reconnection_fee;
-            document.getElementById("violation_fee").value = data.violation_fee;
+
+            const data =
+                processedConsumerLedger[consumerId];
+
+            document.getElementById(
+                "current_reading"
+            ).value = data.current_reading;
+
+            document.getElementById(
+                "connection_fee"
+            ).value = data.connection_fee;
+
+            document.getElementById(
+                "reconnection_fee"
+            ).value = data.reconnection_fee;
+
+            document.getElementById(
+                "violation_fee"
+            ).value = data.violation_fee;
+
             updateStatusIndicator("saved");
+
         } else {
-            document.getElementById("current_reading").value = "";
-            document.getElementById("connection_fee").value = "0.00";
-            document.getElementById("reconnection_fee").value = "0.00";
-            document.getElementById("violation_fee").value = "0.00";
+
+            // ----------------------------------------------
+            // RESET INPUTS
+            // ----------------------------------------------
+
+            document.getElementById(
+                "current_reading"
+            ).value = "";
+
+            document.getElementById(
+                "connection_fee"
+            ).value = "0.00";
+
+            document.getElementById(
+                "reconnection_fee"
+            ).value = "0.00";
+
+            document.getElementById(
+                "violation_fee"
+            ).value = "0.00";
+
             updateStatusIndicator("pending");
         }
 
@@ -363,44 +536,193 @@
     }
 
     function commitConsumerEntry() {
+
         if (!currentlyActiveConsumerNode) {
-            alert("Please select a target consumer from the listing column before saving.");
+
+            alert(
+                "Please select a target consumer from the listing column before saving."
+            );
+
             return;
         }
 
-        const consumerId = currentlyActiveConsumerNode.getAttribute("data-value");
-        const prevReading = parseFloat(document.getElementById("previous_reading").value) || 0;
-        const currentReadingStr = document.getElementById("current_reading").value;
-        const currentReading = parseFloat(currentReadingStr) || 0;
-        const ratePerCubic = parseFloat(document.getElementById("hidden_rate_per_cubic").value) || 0;
+        const consumerId =
+            currentlyActiveConsumerNode.getAttribute(
+                "data-value"
+            );
 
-        if (!currentReadingStr || currentReading < prevReading) {
-            alert("Please supply a logical, valid Current Volumetric Reading parameter.");
-            return;
+        const nameLabel =
+            currentlyActiveConsumerNode.querySelector(
+                ".name-label"
+            );
+
+        const customerStatusText = nameLabel
+            ? nameLabel.innerText.toLowerCase()
+            : "";
+
+        const isNewCustomer =
+            customerStatusText.includes("new");
+
+        const prevReading =
+            parseFloat(
+                document.getElementById(
+                    "previous_reading"
+                ).value
+            ) || 0;
+
+        const currentReadingStr =
+            document.getElementById(
+                "current_reading"
+            ).value.trim();
+
+        const ratePerCubic =
+            parseFloat(
+                document.getElementById(
+                    "hidden_rate_per_cubic"
+                ).value
+            ) || 0;
+
+        // ======================================================
+        // CURRENT READING VALIDATION
+        // ======================================================
+
+        let currentReading = 0;
+
+        if (isNewCustomer) {
+
+            // ----------------------------------------------
+            // NEW CUSTOMER
+            // Current reading is optional.
+            // Blank = 0.
+            // ----------------------------------------------
+
+            if (currentReadingStr === "") {
+
+                currentReading = 0;
+
+            } else {
+
+                currentReading =
+                    parseFloat(currentReadingStr);
+
+                if (isNaN(currentReading) || currentReading < 0) {
+
+                    alert(
+                        "Please enter a valid Current Reading."
+                    );
+
+                    return;
+                }
+            }
+
+        } else {
+
+            // ----------------------------------------------
+            // EXISTING CUSTOMER
+            // Current reading REQUIRED
+            // ----------------------------------------------
+
+            if (currentReadingStr === "") {
+
+                alert(
+                    "Current Reading is required for an existing customer."
+                );
+
+                return;
+            }
+
+            currentReading =
+                parseFloat(currentReadingStr);
+
+            if (
+                isNaN(currentReading) ||
+                currentReading < prevReading
+            ) {
+
+                alert(
+                    "Current Reading cannot be lower than Previous Reading."
+                );
+
+                return;
+            }
         }
 
-        const consumption = Math.max(0, currentReading - prevReading);
-        const volumetricCharge = consumption * ratePerCubic;
+        // ======================================================
+        // CONSUMPTION
+        // ======================================================
+
+        const consumption = Math.max(
+            0,
+            currentReading - prevReading
+        );
+
+        const volumetricCharge =
+            consumption * ratePerCubic;
+
+        // ======================================================
+        // SAVE ENTRY
+        // ======================================================
 
         processedConsumerLedger[consumerId] = {
+
             previous_reading: prevReading,
+
             current_reading: currentReading,
+
             consumption: consumption,
+
             rate_per_cubic: ratePerCubic,
+
             volumetric_charge: volumetricCharge,
-            connection_fee: parseFloat(document.getElementById("connection_fee").value) || 0,
-            reconnection_fee: parseFloat(document.getElementById("reconnection_fee").value) || 0,
-            violation_fee: parseFloat(document.getElementById("violation_fee").value) || 0,
+
+            connection_fee:
+                parseFloat(
+                    document.getElementById(
+                        "connection_fee"
+                    ).value
+                ) || 0,
+
+            reconnection_fee:
+                parseFloat(
+                    document.getElementById(
+                        "reconnection_fee"
+                    ).value
+                ) || 0,
+
+            violation_fee:
+                parseFloat(
+                    document.getElementById(
+                        "violation_fee"
+                    ).value
+                ) || 0,
+
             penalty_fee: 0
         };
 
-        const checkBadge = currentlyActiveConsumerNode.querySelector(".status-badge");
+        // ======================================================
+        // CHECK MARK
+        // ======================================================
+
+        const checkBadge =
+            currentlyActiveConsumerNode.querySelector(
+                ".status-badge"
+            );
+
         if (checkBadge) {
+
             checkBadge.style.display = "inline";
+
         }
 
         updateStatusIndicator("saved");
-        alert("Consumer calculations recorded successfully.");
+
+        calculateLiveBillSummary();
+
+        alert(
+            isNewCustomer
+                ? "New connection billing entry recorded successfully."
+                : "Consumer calculations recorded successfully."
+        );
     }
 
     function updateStatusIndicator(state) {
@@ -417,34 +739,141 @@
     }
 
     function calculateLiveBillSummary() {
-        const previousReading = parseFloat(document.getElementById('previous_reading').value) || 0;
-        const currentReading = parseFloat(document.getElementById('current_reading').value) || 0;
-        const ratePerCubic = parseFloat(document.getElementById('hidden_rate_per_cubic').value) || 0;
-        
-        const connectionFee = parseFloat(document.getElementById('connection_fee').value) || 0;
-        const reconnectionFee = parseFloat(document.getElementById('reconnection_fee').value) || 0;
-        const violationFee = parseFloat(document.getElementById('violation_fee').value) || 0;
 
-        const currentInput = document.getElementById('current_reading');
+        const previousReading =
+            parseFloat(
+                document.getElementById(
+                    "previous_reading"
+                ).value
+            ) || 0;
 
-        if (currentReading > 0 && currentReading < previousReading) {
-            currentInput.style.borderColor = '#ef4444';
-            resetLiveCalculations(false);
+        const currentReading =
+            parseFloat(
+                document.getElementById(
+                    "current_reading"
+                ).value
+            ) || 0;
+
+        const ratePerCubic =
+            parseFloat(
+                document.getElementById(
+                    "hidden_rate_per_cubic"
+                ).value
+            ) || 0;
+
+        const connectionFee =
+            parseFloat(
+                document.getElementById(
+                    "connection_fee"
+                ).value
+            ) || 0;
+
+        const reconnectionFee =
+            parseFloat(
+                document.getElementById(
+                    "reconnection_fee"
+                ).value
+            ) || 0;
+
+        const violationFee =
+            parseFloat(
+                document.getElementById(
+                    "violation_fee"
+                ).value
+            ) || 0;
+
+        const currentInput =
+            document.getElementById(
+                "current_reading"
+            );
+
+        // ======================================================
+        // VALIDATE EXISTING CUSTOMER READING
+        // ======================================================
+
+        if (
+            currentlyActiveConsumerNode &&
+            currentReading < previousReading
+        ) {
+
+            currentInput.style.borderColor =
+                "#ef4444";
+
+            document.getElementById(
+                "live_consumption"
+            ).innerText = "0.00";
+
+            document.getElementById(
+                "live_volumetric_charge"
+            ).innerText = "0.00";
+
+            document.getElementById(
+                "live_total"
+            ).innerText = "0.00";
+
             return;
+
         } else {
-            currentInput.style.borderColor = '#cbd5e1';
+
+            currentInput.style.borderColor =
+                "#cbd5e1";
         }
 
-        const consumption = Math.max(0, currentReading - previousReading);
-        const volumetricCharge = consumption * ratePerCubic;
-        const totalFees = volumetricCharge + connectionFee + reconnectionFee + violationFee;
+        // ======================================================
+        // CALCULATE
+        // ======================================================
 
-        document.getElementById('live_consumption').innerText = consumption.toFixed(2);
-        document.getElementById('live_volumetric_charge').innerText = volumetricCharge.toFixed(2);
-        document.getElementById('live_total').innerText = totalFees.toFixed(2);
+        const consumption =
+            Math.max(
+                0,
+                currentReading - previousReading
+            );
 
-        if (currentlyActiveConsumerNode && document.getElementById("input-status-indicator").innerText.includes("Locked")) {
-            updateStatusIndicator("pending");
+        const volumetricCharge =
+            consumption * ratePerCubic;
+
+        const totalFees =
+            volumetricCharge +
+            connectionFee +
+            reconnectionFee +
+            violationFee;
+
+        // ======================================================
+        // DISPLAY
+        // ======================================================
+
+        document.getElementById(
+            "live_consumption"
+        ).innerText =
+            consumption.toFixed(2);
+
+        document.getElementById(
+            "live_volumetric_charge"
+        ).innerText =
+            volumetricCharge.toFixed(2);
+
+        document.getElementById(
+            "live_total"
+        ).innerText =
+            totalFees.toFixed(2);
+
+        // ======================================================
+        // STATUS
+        // ======================================================
+
+        if (
+            currentlyActiveConsumerNode &&
+            document
+                .getElementById(
+                    "input-status-indicator"
+                )
+                .innerText
+                .includes("Locked")
+        ) {
+
+            updateStatusIndicator(
+                "pending"
+            );
         }
     }
 

@@ -1,5 +1,11 @@
 {% extends 'admin.html' %}
 
+{% if customer %}
+    Edit Consumer Profile
+{% else %}
+    Consumer Profile Credentials Setup
+{% endif %}
+
 {% block content %}
 <header class="top-navbar">
     <div class="page-title">
@@ -32,6 +38,14 @@
                 {% endif %}
             </h3>
         </div>
+
+
+        {% if error %}
+            <div class="form-error">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span>{{ error }}</span>
+            </div>
+        {% endif %}
         
         <form method="POST" class="classic-form" id="customerForm">
             {% csrf_token %}
@@ -42,7 +56,7 @@
                     <label for="firstname">First Name</label>
                     <div class="input-wrapper">
                         <i class="fa-solid fa-user input-icon"></i>
-                        <input type="text" id="firstname" name="firstname" placeholder="John" value="{{ customer.firstname|default:'' }}" required>
+                        <input type="text" id="firstname" name="firstname" placeholder="John" value="{{ form_data.firstname|default:'' }}" required>
                     </div>
                 </div>
 
@@ -51,7 +65,7 @@
                     <label for="middlename">Middle Name <span class="optional-label">(Optional)</span></label>
                     <div class="input-wrapper">
                         <i class="fa-solid fa-user input-icon"></i>
-                        <input type="text" id="middlename" name="middlename" value="{{ customer.middlename|default:'' }}" placeholder="Doe">
+                        <input type="text" id="middlename" name="middlename" value="{{ form_data.middlename|default:'' }}" placeholder="Doe">
                     </div>
                 </div>
 
@@ -60,7 +74,7 @@
                     <label for="lastname">Last Name</label>
                     <div class="input-wrapper">
                         <i class="fa-solid fa-user input-icon"></i>
-                        <input type="text" id="lastname" name="lastname" placeholder="Smith" value="{{ customer.lastname|default:'' }}" required>
+                        <input type="text" id="lastname" name="lastname" placeholder="Smith" value="{{ form_data.lastname|default:'' }}" required>
                     </div>
                 </div>
 
@@ -70,18 +84,25 @@
                     <div class="input-wrapper">
                         <i class="fa-solid fa-map-location-dot input-icon"></i>
                             <select id="barangay" name="barangay" required>
-                                <option value="" disabled {% if not customer %}selected{% endif %}>
+
+                                <option value="" disabled
+                                    {% if not form_data.barangay %}selected{% endif %}>
                                     Select Barangay
                                 </option>
 
                                 {% for barangay in barangays %}
+
                                     <option
                                         value="{{ barangay.id }}"
-                                        {% if customer and customer.barangay.id == barangay.id %}selected{% endif %}
+                                        {% if form_data.barangay == barangay.id|stringformat:"s" %}
+                                            selected
+                                        {% endif %}
                                     >
                                         {{ barangay.barangay_name }}
                                     </option>
+
                                 {% endfor %}
+
                             </select>
                     </div>
                 </div>
@@ -91,7 +112,7 @@
                     <label for="submitter_no">Submitter No. <span class="system-label">(Auto-Generated)</span></label>
                     <div class="input-wrapper">
                         <i class="fa-solid fa-id-card input-icon"></i>
-                        <input type="text" id="submitter_no" name="submitter_no" readonly required class="readonly-field" value="{{ customer.submitter_no|default:'' }}">
+                        <input type="text" id="submitter_no" name="submitter_no" readonly required class="readonly-field" value="{{ form_data.submitter_no|default:'' }}">
                     </div>
                 </div>
             </div>
@@ -109,7 +130,7 @@
                     <label for="username">Username</label>
                     <div class="input-wrapper">
                         <i class="fa-solid fa-at input-icon"></i> 
-                        <input type="text" id="username" name="username" placeholder="customer_login" value="{{ customer.user.username|default:'' }}" required>
+                        <input type="text" id="username" name="username" placeholder="customer_login" value="{{ form_data.username|default:'' }}" required>
                     </div>
                 </div>
 
@@ -372,6 +393,26 @@
 
     .btn-form.save-commit:hover {
         background-color: #9a4305;
+    }
+
+    .form-error {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 30px 20px 30px;
+        padding: 12px 14px;
+        background-color: #fef2f2;
+        border: 1px solid #fecaca;
+        border-left: 4px solid #dc2626;
+        border-radius: 4px;
+        color: #b91c1c;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .form-error i {
+        font-size: 15px;
+        color: #dc2626;
     }
 
     @media (max-width: 768px) {

@@ -3,27 +3,38 @@
 {% block content %}
 
 <header class="top-navbar">
+
     <div class="page-title">
-        <h1 id="current-view-title">Collection &amp; Payments</h1>
+        <h1 id="current-view-title">
+            Collection &amp; Payments
+        </h1>
     </div>
 
     <div class="admin-profile">
+
         <div class="admin-info">
             <small>System Administrator</small>
         </div>
-        <div class="admin-avatar">AD</div>
+
+        <div class="admin-avatar">
+            AD
+        </div>
+
     </div>
+
 </header>
 
 
 <div class="workspace">
 
-    <!-- ==========================================
-         SEARCH + MONTH FILTER
-    =========================================== -->
+    <!-- =====================================================
+         SEARCH + BARANGAY + MONTH FILTER
+    ====================================================== -->
+
     <div class="action-bar">
 
-        <!-- Search -->
+        <!-- SEARCH -->
+
         <div class="search-container">
 
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
@@ -39,7 +50,36 @@
         </div>
 
 
-        <!-- Billing Month -->
+        <!-- BARANGAY FILTER -->
+
+        <div class="barangay-filter-container">
+
+            <i class="fa-solid fa-location-dot barangay-icon"></i>
+
+            <select
+                id="barangayFilter"
+                onchange="executeLivePaymentSearch()"
+            >
+
+                <option value="ALL">
+                    All Barangays
+                </option>
+
+                {% for barangay in barangays %}
+
+                    <option value="{{ barangay.id }}">
+                        {{ barangay.barangay_name }}
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+        </div>
+
+
+        <!-- BILLING MONTH -->
+
         <div class="month-filter-container">
 
             <i class="fa-solid fa-calendar-days month-icon"></i>
@@ -48,12 +88,17 @@
                 id="billingMonthFilter"
                 onchange="executeLivePaymentSearch()"
             >
-                <option value="ALL">All Billing Months</option>
+
+                <option value="ALL">
+                    All Billing Months
+                </option>
 
                 {% for bill in billings %}
+
                     <option value="{{ bill.billing_month|date:'Y-m' }}">
                         {{ bill.billing_month|date:'F Y' }}
                     </option>
+
                 {% endfor %}
 
             </select>
@@ -63,26 +108,31 @@
     </div>
 
 
-    <!-- ==========================================
+    <!-- =====================================================
          ACCOUNT LEDGER
-    =========================================== -->
+    ====================================================== -->
+
     <div class="data-section">
 
         <div class="section-header">
 
             <div>
-                <h3>Account Ledger Registry &amp; Cashier Point</h3>
+
+                <h3>
+                    Account Ledger Registry &amp; Cashier Point
+                </h3>
 
                 <p
-                    id="selectedMonthLabel"
+                    id="selectedFilterLabel"
                     style="
                         margin: 4px 0 0;
                         font-size: 12px;
                         color: var(--secondary-text);
                     "
                 >
-                    Showing all billing months
+                    Showing all unpaid billing accounts
                 </p>
+
             </div>
 
         </div>
@@ -99,19 +149,28 @@
 
                     <tr>
 
-                        <th style="width: 20%;">
+                        <th style="width: 17%;">
                             Submitted No.
                         </th>
 
-                        <th style="width: 30%;">
+                        <th style="width: 23%;">
                             Full Name
                         </th>
 
                         <th style="width: 20%;">
+                            Barangay
+                        </th>
+
+                        <th style="width: 15%;">
                             Billing Month
                         </th>
 
-                        <th style="width: 30%; text-align: center;">
+                        <th
+                            style="
+                                width: 25%;
+                                text-align: center;
+                            "
+                        >
                             Action
                         </th>
 
@@ -126,9 +185,11 @@
 
                     <tr
                         data-billing-month="{{ bill.billing_month|date:'Y-m' }}"
+                        data-barangay-id="{% if bill.customer.barangay %}{{ bill.customer.barangay.id }}{% else %}{% endif %}"
                     >
 
                         <!-- ACCOUNT NUMBER -->
+
                         <td class="account-cell">
 
                             <i class="fa-solid fa-hashtag field-icon"></i>
@@ -139,16 +200,38 @@
 
 
                         <!-- CUSTOMER NAME -->
+
                         <td class="font-semibold">
 
                             {{ bill.customer.firstname }}
-
                             {{ bill.customer.lastname }}
 
                         </td>
 
 
+                        <!-- BARANGAY -->
+
+                        <td class="barangay-cell">
+
+                            {% if bill.customer.barangay %}
+
+                                <i class="fa-solid fa-location-dot field-icon"></i>
+
+                                {{ bill.customer.barangay.barangay_name }}
+
+                            {% else %}
+
+                                <span class="no-barangay">
+                                    No Barangay
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
                         <!-- BILLING MONTH -->
+
                         <td class="billing-month-cell">
 
                             <i class="fa-solid fa-calendar-days field-icon"></i>
@@ -159,6 +242,7 @@
 
 
                         <!-- ACTION -->
+
                         <td>
 
                             <div class="action-btn-group">
@@ -185,13 +269,15 @@
                     <tr id="emptyDatabaseRow">
 
                         <td
-                            colspan="4"
+                            colspan="5"
                             style="
                                 text-align:center;
                                 padding:20px;
                             "
                         >
+
                             No unpaid bills found.
+
                         </td>
 
                     </tr>
@@ -204,10 +290,11 @@
 
 
             <!-- NO RESULTS -->
+
             <div
                 id="noResultsAlert"
                 class="empty-state-fallback"
-                style="display: none;"
+                style="display:none;"
             >
 
                 <i class="fa-solid fa-folder-open"></i>
@@ -227,9 +314,9 @@
 
 <style>
 
-/* ==========================================
+/* ==========================================================
    ACTION BAR
-========================================== */
+========================================================== */
 
 .action-bar {
 
@@ -246,9 +333,9 @@
 }
 
 
-/* ==========================================
+/* ==========================================================
    SEARCH
-========================================== */
+========================================================== */
 
 .search-container {
 
@@ -256,7 +343,7 @@
 
     width: 100%;
 
-    max-width: 460px;
+    max-width: 420px;
 
 }
 
@@ -313,14 +400,86 @@
 
     border-color: var(--accent-blue);
 
-    box-shadow: 0 4px 12px rgba(29, 78, 216, 0.05);
+    box-shadow:
+        0 4px 12px
+        rgba(29, 78, 216, 0.05);
 
 }
 
 
-/* ==========================================
+/* ==========================================================
+   BARANGAY FILTER
+========================================================== */
+
+.barangay-filter-container {
+
+    position: relative;
+
+    width: 230px;
+
+}
+
+
+.barangay-icon {
+
+    position: absolute;
+
+    left: 13px;
+
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    color: #64748b;
+
+    font-size: 13px;
+
+    pointer-events: none;
+
+    z-index: 2;
+
+}
+
+
+.barangay-filter-container select {
+
+    width: 100%;
+
+    height: 42px;
+
+    padding: 8px 12px 8px 38px;
+
+    font-size: 13px;
+
+    color: var(--primary-text);
+
+    background-color: #ffffff;
+
+    border: 1px solid var(--border-classic);
+
+    border-radius: 4px;
+
+    cursor: pointer;
+
+    outline: none;
+
+}
+
+
+.barangay-filter-container select:focus {
+
+    border-color: var(--accent-blue);
+
+    box-shadow:
+        0 4px 12px
+        rgba(29, 78, 216, 0.05);
+
+}
+
+
+/* ==========================================================
    MONTH FILTER
-========================================== */
+========================================================== */
 
 .month-filter-container {
 
@@ -381,18 +540,22 @@
 
     border-color: var(--accent-blue);
 
-    box-shadow: 0 4px 12px rgba(29, 78, 216, 0.05);
+    box-shadow:
+        0 4px 12px
+        rgba(29, 78, 216, 0.05);
 
 }
 
 
-/* ==========================================
-   BILLING MONTH CELL
-========================================== */
+/* ==========================================================
+   ACCOUNT NUMBER
+========================================================== */
 
-.billing-month-cell {
+.account-cell {
 
-    font-size: 13px;
+    font-family: monospace;
+
+    font-size: 14px;
 
     font-weight: 600;
 
@@ -412,26 +575,9 @@
 }
 
 
-/* ==========================================
-   ACCOUNT NUMBER
-========================================== */
-
-.account-cell {
-
-    font-family: monospace;
-
-    font-size: 14px;
-
-    font-weight: 600;
-
-    color: var(--secondary-text);
-
-}
-
-
-/* ==========================================
+/* ==========================================================
    CUSTOMER NAME
-========================================== */
+========================================================== */
 
 .font-semibold {
 
@@ -442,9 +588,57 @@
 }
 
 
-/* ==========================================
+/* ==========================================================
+   BARANGAY CELL
+========================================================== */
+
+.barangay-cell {
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    color: #475569;
+
+}
+
+
+.barangay-cell .field-icon {
+
+    color: #94a3b8;
+
+}
+
+
+.no-barangay {
+
+    color: #94a3b8;
+
+    font-style: italic;
+
+    font-size: 12px;
+
+}
+
+
+/* ==========================================================
+   BILLING MONTH
+========================================================== */
+
+.billing-month-cell {
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    color: var(--secondary-text);
+
+}
+
+
+/* ==========================================================
    ACTION BUTTON
-========================================== */
+========================================================== */
 
 .action-btn-group {
 
@@ -496,14 +690,16 @@
 
     color: #ffffff;
 
-    box-shadow: 0 4px 8px rgba(29, 78, 216, 0.15);
+    box-shadow:
+        0 4px 8px
+        rgba(29, 78, 216, 0.15);
 
 }
 
 
-/* ==========================================
+/* ==========================================================
    EMPTY SEARCH
-========================================== */
+========================================================== */
 
 .empty-state-fallback {
 
@@ -538,9 +734,37 @@
 }
 
 
-/* ==========================================
+/* ==========================================================
    RESPONSIVE
-========================================== */
+========================================================== */
+
+@media (max-width: 1000px) {
+
+    .action-bar {
+
+        flex-wrap: wrap;
+
+    }
+
+    .search-container {
+
+        max-width: 100%;
+
+        flex: 1 1 100%;
+
+    }
+
+    .barangay-filter-container,
+    .month-filter-container {
+
+        flex: 1;
+
+        width: auto;
+
+    }
+
+}
+
 
 @media (max-width: 700px) {
 
@@ -558,6 +782,7 @@
 
     }
 
+    .barangay-filter-container,
     .month-filter-container {
 
         width: 100%;
@@ -571,68 +796,103 @@
 
 <script>
 
-/* ==========================================
-   PAYMENT SEARCH + MONTH FILTER
-========================================== */
+/* ==========================================================
+   PAYMENT SEARCH + BARANGAY + MONTH FILTER
+========================================================== */
 
 function executeLivePaymentSearch() {
 
     const searchInput =
-        document.getElementById("paymentSearchInput");
+        document.getElementById(
+            "paymentSearchInput"
+        );
+
+    const barangayFilter =
+        document.getElementById(
+            "barangayFilter"
+        );
 
     const monthFilter =
-        document.getElementById("billingMonthFilter");
+        document.getElementById(
+            "billingMonthFilter"
+        );
 
     const table =
-        document.getElementById("paymentsTable");
+        document.getElementById(
+            "paymentsTable"
+        );
 
     const fallbackAlert =
-        document.getElementById("noResultsAlert");
+        document.getElementById(
+            "noResultsAlert"
+        );
 
-    const selectedMonthLabel =
-        document.getElementById("selectedMonthLabel");
+    const selectedFilterLabel =
+        document.getElementById(
+            "selectedFilterLabel"
+        );
 
 
-    /*
-     * Search text
-     */
+    /* ======================================================
+       GET FILTER VALUES
+    ====================================================== */
+
     const searchFilter =
         searchInput.value
             .toUpperCase()
             .trim();
 
 
-    /*
-     * Selected month
-     */
+    const selectedBarangay =
+        barangayFilter.value;
+
+
     const selectedMonth =
         monthFilter.value;
 
 
-    /*
-     * Get table rows only from tbody
-     */
-    const rows =
-        table.querySelectorAll("tbody tr[data-billing-month]");
+    /* ======================================================
+       GET SELECTED BARANGAY NAME
+    ====================================================== */
+
+    let barangayName =
+        "All Barangays";
 
 
-    let visibleRowCount = 0;
+    if (selectedBarangay !== "ALL") {
+
+        const selectedOption =
+            barangayFilter.options[
+                barangayFilter.selectedIndex
+            ];
+
+        if (selectedOption) {
+
+            barangayName =
+                selectedOption.text;
+
+        }
+
+    }
 
 
-    /*
-     * Update month label
-     */
-    if (selectedMonth === "ALL") {
+    /* ======================================================
+       GET SELECTED MONTH NAME
+    ====================================================== */
 
-        selectedMonthLabel.innerText =
-            "Showing all billing months";
+    let monthName =
+        "All Billing Months";
 
-    } else {
+
+    if (selectedMonth !== "ALL") {
 
         const date =
-            new Date(selectedMonth + "-01T00:00:00");
+            new Date(
+                selectedMonth +
+                "-01T00:00:00"
+            );
 
-        const monthName =
+        monthName =
             date.toLocaleString(
                 "en-US",
                 {
@@ -641,22 +901,62 @@ function executeLivePaymentSearch() {
                 }
             );
 
-        selectedMonthLabel.innerText =
-            "Showing billing period: " + monthName;
+    }
+
+
+    /* ======================================================
+       UPDATE FILTER LABEL
+    ====================================================== */
+
+    if (
+        selectedBarangay === "ALL"
+        &&
+        selectedMonth === "ALL"
+    ) {
+
+        selectedFilterLabel.innerText =
+            "Showing all unpaid billing accounts";
+
+    } else {
+
+        selectedFilterLabel.innerText =
+            "Barangay: " +
+            barangayName +
+            " | Billing Period: " +
+            monthName;
 
     }
 
 
-    /*
-     * Process every billing row
-     */
+    /* ======================================================
+       GET BILLING ROWS
+    ====================================================== */
+
+    const rows =
+        table.querySelectorAll(
+            "tbody tr[data-billing-month]"
+        );
+
+
+    let visibleRowCount = 0;
+
+
+    /* ======================================================
+       PROCESS ROWS
+    ====================================================== */
+
     rows.forEach(row => {
 
         const accountCell =
-            row.querySelector(".account-cell");
+            row.querySelector(
+                ".account-cell"
+            );
 
         const nameCell =
-            row.querySelector(".font-semibold");
+            row.querySelector(
+                ".font-semibold"
+            );
+
 
         const rowMonth =
             row.getAttribute(
@@ -664,40 +964,81 @@ function executeLivePaymentSearch() {
             );
 
 
-        if (!accountCell || !nameCell) {
+        const rowBarangay =
+            row.getAttribute(
+                "data-barangay-id"
+            );
+
+
+        if (
+            !accountCell
+            ||
+            !nameCell
+        ) {
 
             return;
 
         }
 
 
+        /* ==================================================
+           ACCOUNT SEARCH
+        ================================================== */
+
         const accountText =
             (
-                accountCell.textContent || ""
-            ).toUpperCase();
+                accountCell.textContent
+                || ""
+            )
+            .toUpperCase();
 
+
+        /* ==================================================
+           NAME SEARCH
+        ================================================== */
 
         const nameText =
             (
-                nameCell.textContent || ""
-            ).toUpperCase();
+                nameCell.textContent
+                || ""
+            )
+            .toUpperCase();
 
 
-        /*
-         * SEARCH MATCH
-         */
+        /* ==================================================
+           SEARCH MATCH
+        ================================================== */
+
         const matchesSearch =
 
-            accountText.indexOf(searchFilter) > -1
+            accountText.indexOf(
+                searchFilter
+            ) > -1
 
             ||
 
-            nameText.indexOf(searchFilter) > -1;
+            nameText.indexOf(
+                searchFilter
+            ) > -1;
 
 
-        /*
-         * MONTH MATCH
-         */
+        /* ==================================================
+           BARANGAY MATCH
+        ================================================== */
+
+        const matchesBarangay =
+
+            selectedBarangay === "ALL"
+
+            ||
+
+            rowBarangay === selectedBarangay;
+
+
+        /* ==================================================
+           MONTH MATCH
+        ================================================== */
+
         const matchesMonth =
 
             selectedMonth === "ALL"
@@ -707,12 +1048,22 @@ function executeLivePaymentSearch() {
             rowMonth === selectedMonth;
 
 
-        /*
-         * BOTH CONDITIONS MUST MATCH
-         */
+        /* ==================================================
+           FINAL MATCH
+        ================================================== */
+
         if (
-            matchesSearch &&
+
+            matchesSearch
+
+            &&
+
+            matchesBarangay
+
+            &&
+
             matchesMonth
+
         ) {
 
             row.style.display = "";
@@ -728,29 +1079,34 @@ function executeLivePaymentSearch() {
     });
 
 
-    /*
-     * Show / hide table
-     */
-    if (visibleRowCount === 0) {
+    /* ======================================================
+       SHOW / HIDE TABLE
+    ====================================================== */
+
+    if (
+        visibleRowCount === 0
+    ) {
 
         table.style.display = "none";
 
-        fallbackAlert.style.display = "block";
+        fallbackAlert.style.display =
+            "block";
 
     } else {
 
         table.style.display = "table";
 
-        fallbackAlert.style.display = "none";
+        fallbackAlert.style.display =
+            "none";
 
     }
 
 }
 
 
-/* ==========================================
+/* ==========================================================
    INITIAL FILTER
-========================================== */
+========================================================== */
 
 document.addEventListener(
     "DOMContentLoaded",
@@ -762,5 +1118,6 @@ document.addEventListener(
 );
 
 </script>
+
 
 {% endblock %}
