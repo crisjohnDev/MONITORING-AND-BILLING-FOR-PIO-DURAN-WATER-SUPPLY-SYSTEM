@@ -19,7 +19,7 @@ from django.db.models.functions import Coalesce
 import json
 from django.db.models.deletion import ProtectedError
 
-@login_required(login_url="login-view")(login_url='login-view')
+@login_required(login_url="login-view")
 def admin_dashboard(request):
 
     # ==========================
