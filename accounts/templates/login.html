@@ -1,29 +1,70 @@
 {% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pio Duran Water Supply System - Admin Portal</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/PWSS.png' %}">
-    <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/PWSS.png' %}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/PWSS.png' %}">
-    <!-- External Dependencies: Google Fonts & FontAwesome Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Lora:ital,wght@0,400;0,500;1,400&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Classic Embedded Styles -->
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Pio Duran Water Supply System - Admin Portal</title>
+
+    <link
+        rel="icon"
+        type="image/png"
+        sizes="32x32"
+        href="{% static 'images/PWSS.png' %}"
+    >
+
+    <link
+        rel="icon"
+        type="image/png"
+        sizes="192x192"
+        href="{% static 'images/PWSS.png' %}"
+    >
+
+    <link
+        rel="apple-touch-icon"
+        sizes="180x180"
+        href="{% static 'images/PWSS.png' %}"
+    >
+
+    <!-- =====================================================
+         EXTERNAL DEPENDENCIES
+    ====================================================== -->
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Lora:ital,wght@0,400;0,500;1,400&family=Open+Sans:wght@400;500;600&display=swap"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    >
+
+    <!-- =====================================================
+         STYLES
+    ====================================================== -->
+
     <style>
+
         :root {
             /* Classic Institutional Palette */
-            --bg-color: #0f1d3a;          /* Deep Regal Navy */
-            --card-bg: #ffffff;           /* Clean Structured White */
-            --primary-text: #1e293b;      /* Dark Slate */
-            --secondary-text: #64748b;    /* Muted Slate */
-            --accent-gold: #b45309;       /* Heritage Amber/Gold Accent */
-            --border-classic: #cbd5e1;     /* Fine Boundary Grey */
-            --input-focus: #1d4ed8;       /* Traditional Blue Highlight */
+            --bg-color: #0f1d3a;
+            --card-bg: #ffffff;
+            --primary-text: #1e293b;
+            --secondary-text: #64748b;
+            --accent-gold: #b45309;
+            --border-classic: #cbd5e1;
+            --input-focus: #1d4ed8;
         }
+
 
         * {
             margin: 0;
@@ -31,206 +72,383 @@
             box-sizing: border-box;
         }
 
+
         body {
             background-color: var(--bg-color);
-            /* Classic subtle watermark-style background overlay */
-            background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 0);
+
+            /* Classic subtle watermark-style background */
+            background-image:
+                radial-gradient(
+                    rgba(255, 255, 255, 0.03) 1px,
+                    transparent 0
+                );
+
             background-size: 24px 24px;
+
             min-height: 100vh;
+
             display: flex;
             align-items: center;
             justify-content: center;
+
             padding: 20px;
         }
 
-        /* Classic Elegant Card Layout */
+
+        /* =====================================================
+           LOGIN CARD
+        ====================================================== */
+
         .login-card {
             background: var(--card-bg);
+
             width: 100%;
             max-width: 440px;
-            border-radius: 4px; /* Sharp, traditional geometric edges */
+
+            border-radius: 4px;
+
             padding: 45px 40px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            border-top: 5px solid var(--accent-gold); /* Classic structural accent bar */
+
+            box-shadow:
+                0 25px 50px -12px
+                rgba(0, 0, 0, 0.5);
         }
 
-        /* Header & Traditional Crest Styling */
+
+        /* =====================================================
+           HEADER
+        ====================================================== */
+
         .brand-header {
             text-align: center;
             margin-bottom: 35px;
         }
 
-        /* Crest Image Container Styling */
+
         .crest-container {
             width: 110px;
             height: 110px;
+
             margin: 0 auto 16px auto;
+
             position: relative;
+
             border-radius: 50%;
-            {% comment %} border: 2px solid var(--accent-gold); {% endcomment %}
+
             padding: 4px;
+
             background: #ffffff;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+
+            box-shadow:
+                0 4px 10px
+                rgba(0, 0, 0, 0.08);
+
             display: flex;
             align-items: center;
             justify-content: center;
         }
+
 
         .crest-logo {
             width: 100%;
             height: 100%;
+
             object-fit: contain;
+
             border-radius: 50%;
         }
 
+
         .brand-header h1 {
-            font-family: 'Cinzel', serif; /* Classic serif heading font */
+            font-family: 'Cinzel', serif;
+
             color: var(--primary-text);
+
             font-size: 20px;
+
             font-weight: 700;
+
             letter-spacing: 1px;
+
             line-height: 1.3;
+
             text-transform: uppercase;
         }
 
+
         .brand-header p {
-            font-family: 'Lora', serif; /* Elegant secondary serif font */
+            font-family: 'Lora', serif;
+
             font-style: italic;
+
             color: var(--secondary-text);
+
             font-size: 14px;
+
             margin-top: 6px;
         }
 
+
         .divider {
             height: 1px;
-            background: radial-gradient(circle, var(--border-classic) 0%, transparent 80%);
+
+            background:
+                radial-gradient(
+                    circle,
+                    var(--border-classic) 0%,
+                    transparent 80%
+                );
+
             margin: 20px auto 0;
+
             width: 80%;
         }
 
-        /* Standard Form Fields styling */
+
+        /* =====================================================
+           FORM
+        ====================================================== */
+
         .login-form {
             display: flex;
+
             flex-direction: column;
+
             gap: 22px;
         }
 
+
         .input-group {
             display: flex;
+
             flex-direction: column;
+
             gap: 6px;
         }
 
+
         .input-group label {
             font-family: 'Open Sans', sans-serif;
+
             color: var(--primary-text);
+
             font-size: 13px;
+
             font-weight: 600;
+
             text-transform: uppercase;
+
             letter-spacing: 0.5px;
         }
 
+
+        /* =====================================================
+           INPUT WRAPPER
+        ====================================================== */
+
         .input-wrapper {
             position: relative;
+
             display: flex;
+
             align-items: center;
         }
+
 
         .field-icon {
             position: absolute;
+
             left: 14px;
+
             color: var(--secondary-text);
+
             font-size: 15px;
+
             pointer-events: none;
+
+            z-index: 2;
         }
+
 
         .input-wrapper input {
             font-family: 'Open Sans', sans-serif;
+
             width: 100%;
-            padding: 12px 14px 12px 42px;
+
+            padding:
+                12px
+                48px
+                12px
+                42px;
+
             background-color: #f8fafc;
+
             border: 1px solid var(--border-classic);
+
             border-radius: 3px;
+
             color: var(--primary-text);
+
             font-size: 14px;
+
             outline: none;
+
             transition: all 0.2s ease;
         }
 
-        /* Classic Focus Border Style */
+
         .input-wrapper input:focus {
             border-color: var(--input-focus);
+
             background-color: #ffffff;
-            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15);
+
+            box-shadow:
+                0 0 0 3px
+                rgba(29, 78, 216, 0.15);
         }
+
+
+        /* =====================================================
+           PASSWORD TOGGLE
+        ====================================================== */
 
         .toggle-password {
             position: absolute;
-            right: 14px;
-            background: none;
+
+            right: 10px;
+
+            top: 50%;
+
+            transform: translateY(-50%);
+
+            width: 36px;
+            height: 36px;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            background: transparent;
+
             border: none;
+
             color: var(--secondary-text);
+
             cursor: pointer;
+
             font-size: 15px;
-            padding: 4px;
+
+            padding: 0;
+
+            border-radius: 50%;
+
+            z-index: 5;
+
+            transition:
+                color 0.2s ease,
+                background-color 0.2s ease;
         }
+
 
         .toggle-password:hover {
             color: var(--primary-text);
+
+            background-color:
+                rgba(100, 116, 139, 0.08);
         }
 
-        /* Classic Solid Action Button */
+
+        .toggle-password:focus {
+            outline: none;
+
+            color: var(--input-focus);
+        }
+
+
+        .toggle-password:active {
+            transform:
+                translateY(-50%)
+                scale(0.94);
+        }
+
+
+        .toggle-password i {
+            pointer-events: none;
+        }
+
+
+        /* =====================================================
+           SUBMIT BUTTON
+        ====================================================== */
+
         .btn-submit {
             font-family: 'Open Sans', sans-serif;
+
             margin-top: 10px;
+
             background-color: var(--bg-color);
+
             border: 1px solid rgba(0, 0, 0, 0.2);
+
             padding: 14px;
+
             border-radius: 3px;
+
             color: #ffffff;
+
             font-size: 14px;
+
             font-weight: 600;
+
             text-transform: uppercase;
+
             letter-spacing: 1px;
+
             cursor: pointer;
+
             display: flex;
+
             align-items: center;
             justify-content: center;
+
             gap: 10px;
+
             transition: all 0.2s ease;
         }
 
+
         .btn-submit:hover {
             background-color: #1e3a6d;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+            box-shadow:
+                0 4px 12px
+                rgba(0, 0, 0, 0.15);
         }
+
 
         .btn-submit:active {
             background-color: var(--bg-color);
         }
 
-        /* Traditional Administrative Footer */
-        .portal-footer {
-            text-align: center;
-            margin-top: 35px;
-            font-family: 'Open Sans', sans-serif;
-            font-size: 11px;
-            color: var(--secondary-text);
-            letter-spacing: 0.3px;
-            text-transform: uppercase;
-            border-top: 1px solid #f1f5f9;
-            padding-top: 20px;
-        }
+
+        /* =====================================================
+           ERROR MESSAGE
+        ====================================================== */
 
         .login-error {
             display: flex;
+
             align-items: center;
+
             gap: 10px;
 
             padding: 12px 14px;
 
             background: #fef2f2;
+
             border: 1px solid #fecaca;
+
             border-left: 4px solid #dc2626;
 
             border-radius: 3px;
@@ -238,93 +456,448 @@
             color: #b91c1c;
 
             font-family: 'Open Sans', sans-serif;
+
             font-size: 13px;
+
             font-weight: 600;
 
             margin-bottom: 2px;
         }
 
+
         .login-error i {
             font-size: 15px;
         }
+
+
+        /* =====================================================
+           FOOTER
+        ====================================================== */
+
+        .portal-footer {
+            text-align: center;
+
+            margin-top: 35px;
+
+            font-family: 'Open Sans', sans-serif;
+
+            font-size: 11px;
+
+            color: var(--secondary-text);
+
+            letter-spacing: 0.3px;
+
+            text-transform: uppercase;
+
+            border-top: 1px solid #f1f5f9;
+
+            padding-top: 20px;
+        }
+
+
+        /* =====================================================
+           MOBILE
+        ====================================================== */
+
+        @media (max-width: 480px) {
+
+            body {
+                padding: 15px;
+            }
+
+
+            .login-card {
+                padding: 35px 25px;
+            }
+
+
+            .brand-header h1 {
+                font-size: 18px;
+            }
+
+
+            .crest-container {
+                width: 95px;
+                height: 95px;
+            }
+        }
+
     </style>
+
 </head>
+
+
 <body>
 
+    <!-- =====================================================
+         LOGIN CARD
+    ====================================================== -->
+
     <div class="login-card">
-        <!-- Traditional Structural Header -->
+
+
+        <!-- =================================================
+             HEADER
+        ================================================== -->
+
         <div class="brand-header">
-            <!-- Modernized Logo Emblem Box -->
+
             <div class="crest-container">
-                <img src="{% static "images/PWSS.png" %}" alt="Pio Duran Water Supply Crest" class="crest-logo">
+
+                <img
+                    src="{% static 'images/PWSS.png' %}"
+                    alt="Pio Duran Water Supply Crest"
+                    class="crest-logo"
+                >
+
             </div>
-            <h1>Pio Duran Water<br>Supply System</h1>
-            <p>Administrative Access Terminal</p>
+
+
+            <h1>
+                Pio Duran Water<br>
+                Supply System
+            </h1>
+
+
+            <p>
+                Administrative Access Terminal
+            </p>
+
+
             <div class="divider"></div>
+
         </div>
 
-        <!-- Credential Input Fields -->
-        <form method="POST" class="login-form" id="adminPortalForm">
+
+        <!-- =================================================
+             LOGIN FORM
+        ================================================== -->
+
+        <form
+            method="POST"
+            class="login-form"
+            id="adminPortalForm"
+        >
+
             {% csrf_token %}
 
+
+            <!-- =============================================
+                 ERROR
+            ============================================== -->
+
             {% if error %}
+
                 <div class="login-error">
+
                     <i class="fa-solid fa-circle-exclamation"></i>
-                    <span>{{ error }}</span>
+
+                    <span>
+                        {{ error }}
+                    </span>
+
                 </div>
+
             {% endif %}
-            <div class="input-group">
-                <label for="username">Username</label>
-                <div class="input-wrapper">
-                    <i class="fa-solid fa-user-shield field-icon"></i>
-                    <input type="text" id="username" name="username" placeholder="Enter administrator identifier" required autocomplete="off">
-                </div>
-            </div>
+
+
+            <!-- =============================================
+                 USERNAME
+            ============================================== -->
 
             <div class="input-group">
-                <label for="password">Password</label>
+
+                <label for="username">
+                    Username
+                </label>
+
+
                 <div class="input-wrapper">
-                    <i class="fa-solid fa-key field-icon"></i>
-                    <input type="password" id="password" name="password" placeholder="••••••••" required>
-                    <button type="button" class="toggle-password" id="togglePassword">
-                        <i class="fa-regular fa-eye" id="eyeIcon"></i>
+
+                    <i
+                        class="fa-solid fa-user-shield field-icon"
+                    ></i>
+
+
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        placeholder="Enter administrator identifier"
+                        required
+                        autocomplete="username"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <!-- =============================================
+                 PASSWORD
+            ============================================== -->
+
+            <div class="input-group">
+
+                <label for="password">
+                    Password
+                </label>
+
+
+                <div class="input-wrapper">
+
+                    <i
+                        class="fa-solid fa-key field-icon"
+                    ></i>
+
+
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="••••••••"
+                        required
+                        autocomplete="current-password"
+                    >
+
+
+                    <!-- =====================================
+                         PASSWORD VISIBILITY BUTTON
+                    ====================================== -->
+
+                    <button
+                        type="button"
+                        class="toggle-password"
+                        id="togglePassword"
+                        aria-label="Show password"
+                        title="Show password"
+                    >
+
+                        <!--
+                            IMPORTANT:
+
+                            Password starts HIDDEN,
+                            therefore the icon starts
+                            with an eye slash.
+                        -->
+
+                        <i
+                            class="fa-regular fa-eye-slash"
+                            id="eyeIcon"
+                        ></i>
+
                     </button>
+
                 </div>
+
             </div>
 
-            <button type="submit" class="btn-submit">
-                <span>Sign In</span>
+
+            <!-- =============================================
+                 SUBMIT
+            ============================================== -->
+
+            <button
+                type="submit"
+                class="btn-submit"
+            >
+
+                <span>
+                    Sign In
+                </span>
+
                 <i class="fa-solid fa-lock"></i>
+
             </button>
+
+
         </form>
 
-        <!-- Informational Footer -->
+
+        <!-- =================================================
+             FOOTER
+        ================================================== -->
+
         <div class="portal-footer">
-            <p>Secure Management Server • Unauthorized Access Prohibited</p>
+
+            <p>
+                Secure Management Server •
+                Unauthorized Access Prohibited
+            </p>
+
         </div>
+
+
     </div>
 
-    <!-- Interface Controller Logic -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const togglePasswordButton = document.getElementById('togglePassword');
-            const passwordInput = document.getElementById('password');
-            const eyeIcon = document.getElementById('eyeIcon');
 
-            // Visibility switcher for access keys
-            togglePasswordButton.addEventListener('click', () => {
-                const isHidden = passwordInput.getAttribute('type') === 'password';
-                passwordInput.setAttribute('type', isHidden ? 'text' : 'password');
-                
-                if (isHidden) {
-                    eyeIcon.classList.remove('fa-eye');
-                    eyeIcon.classList.add('fa-eye-slash');
-                } else {
-                    eyeIcon.classList.remove('fa-eye-slash');
-                    eyeIcon.classList.add('fa-eye');
+    <!-- =====================================================
+         JAVASCRIPT
+    ====================================================== -->
+
+    <script>
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            function () {
+
+                /* =============================================
+                   GET ELEMENTS
+                ============================================== */
+
+                const togglePassword =
+                    document.getElementById(
+                        "togglePassword"
+                    );
+
+
+                const passwordInput =
+                    document.getElementById(
+                        "password"
+                    );
+
+
+                const eyeIcon =
+                    document.getElementById(
+                        "eyeIcon"
+                    );
+
+
+                /* =============================================
+                   SAFETY CHECK
+                ============================================== */
+
+                if (
+                    !togglePassword ||
+                    !passwordInput ||
+                    !eyeIcon
+                ) {
+                    return;
                 }
-            });
-        });
+
+
+                /* =============================================
+                   PASSWORD TOGGLE
+                ============================================== */
+
+                togglePassword.addEventListener(
+                    "click",
+                    function (event) {
+
+                        /*
+                         * Prevent the button from
+                         * submitting the form.
+                         */
+
+                        event.preventDefault();
+
+
+                        /*
+                         * PASSWORD IS CURRENTLY HIDDEN
+                         *
+                         * password type:
+                         * "password"
+                         *
+                         * Change to:
+                         * "text"
+                         */
+
+                        if (
+                            passwordInput.type === "password"
+                        ) {
+
+                            /* Show password */
+                            passwordInput.type = "text";
+
+
+                            /*
+                             * PASSWORD IS NOW VISIBLE
+                             *
+                             * Use normal eye icon.
+                             */
+
+                            eyeIcon.classList.remove(
+                                "fa-eye-slash"
+                            );
+
+                            eyeIcon.classList.add(
+                                "fa-eye"
+                            );
+
+
+                            /* Accessibility */
+
+                            togglePassword.setAttribute(
+                                "aria-label",
+                                "Hide password"
+                            );
+
+                            togglePassword.setAttribute(
+                                "title",
+                                "Hide password"
+                            );
+
+                        }
+
+
+                        /*
+                         * PASSWORD IS CURRENTLY VISIBLE
+                         *
+                         * Change back to hidden.
+                         */
+
+                        else {
+
+                            /* Hide password */
+                            passwordInput.type = "password";
+
+
+                            /*
+                             * PASSWORD IS NOW HIDDEN
+                             *
+                             * Use eye-slash icon.
+                             */
+
+                            eyeIcon.classList.remove(
+                                "fa-eye"
+                            );
+
+                            eyeIcon.classList.add(
+                                "fa-eye-slash"
+                            );
+
+
+                            /* Accessibility */
+
+                            togglePassword.setAttribute(
+                                "aria-label",
+                                "Show password"
+                            );
+
+                            togglePassword.setAttribute(
+                                "title",
+                                "Show password"
+                            );
+
+                        }
+
+
+                        /*
+                         * Keep cursor/focus
+                         * inside password field.
+                         */
+
+                        passwordInput.focus();
+
+                    }
+                );
+
+            }
+        );
+
     </script>
+
+
 </body>
+
 </html>

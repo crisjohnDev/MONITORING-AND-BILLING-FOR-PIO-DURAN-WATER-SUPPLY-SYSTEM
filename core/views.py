@@ -1609,12 +1609,35 @@ def delete_notification(request, pk):
 @login_required(login_url="login-view")
 def paid_report(request):
 
-    billing_coverage = request.GET.get("billing_coverage")
+    # =====================================================
+    # GET SELECTED BILLING MONTH
+    # =====================================================
+
+    billing_coverage = request.GET.get(
+        "billing_coverage",
+        ""
+    ).strip()
+
+
+    # =====================================================
+    # DEFAULT VALUES
+    # =====================================================
+
+    billing_coverage_display = None
+    selected_billing_date = None
+
+
+    # =====================================================
+    # GET ALL PAID BILLINGS
+    # =====================================================
 
     billings = (
         Billing.objects
         .filter(status="paid")
-        .select_related("customer", "payment")
+        .select_related(
+            "customer",
+            "payment"
+        )
         .order_by(
             "-billing_month",
             "customer__lastname",
@@ -1622,33 +1645,90 @@ def paid_report(request):
         )
     )
 
-    # Filter by billing month if selected
+
+    # =====================================================
+    # FILTER BY BILLING MONTH
+    # =====================================================
+
     if billing_coverage:
+
         try:
-            billing_date = datetime.strptime(
+
+            selected_billing_date = datetime.strptime(
                 billing_coverage,
                 "%Y-%m"
             ).date().replace(day=1)
 
-            billings = billings.filter(
-                billing_month=billing_date
+
+            # Human-readable billing coverage
+            billing_coverage_display = (
+                selected_billing_date.strftime("%B %Y")
             )
+
+
+            # Filter paid accounts
+            billings = billings.filter(
+                billing_month=selected_billing_date
+            )
+
+
         except ValueError:
-            pass
+
+            # Invalid month value
+            billing_coverage_display = None
+            selected_billing_date = None
+
+
+    # =====================================================
+    # CONTEXT
+    # =====================================================
+
+    context = {
+
+        "billings": billings,
+
+        "billing_coverage":
+            billing_coverage,
+
+        "billing_coverage_display":
+            billing_coverage_display,
+
+        "selected_billing_date":
+            selected_billing_date,
+
+    }
+
 
     return render(
         request,
         "admin/paid_report.html",
-        {
-            "billings": billings,
-            "billing_coverage": billing_coverage,
-        }
+        context
     )
 
 @login_required(login_url="login-view")
 def unpaid_report(request):
 
-    billing_coverage = request.GET.get("billing_coverage")
+    # =====================================================
+    # GET SELECTED BILLING MONTH
+    # =====================================================
+
+    billing_coverage = request.GET.get(
+        "billing_coverage",
+        ""
+    ).strip()
+
+
+    # =====================================================
+    # DEFAULT VALUES
+    # =====================================================
+
+    billing_coverage_display = None
+    selected_billing_date = None
+
+
+    # =====================================================
+    # GET ALL UNPAID BILLINGS
+    # =====================================================
 
     billings = (
         Billing.objects
@@ -1661,26 +1741,63 @@ def unpaid_report(request):
         )
     )
 
+
+    # =====================================================
+    # FILTER BY BILLING MONTH
+    # =====================================================
+
     if billing_coverage:
+
         try:
-            billing_date = datetime.strptime(
+
+            selected_billing_date = datetime.strptime(
                 billing_coverage,
                 "%Y-%m"
             ).date().replace(day=1)
 
-            billings = billings.filter(
-                billing_month=billing_date
+
+            # Human-readable billing coverage
+            billing_coverage_display = (
+                selected_billing_date.strftime("%B %Y")
             )
+
+
+            # Filter unpaid accounts
+            billings = billings.filter(
+                billing_month=selected_billing_date
+            )
+
+
         except ValueError:
-            pass
+
+            billing_coverage_display = None
+            selected_billing_date = None
+
+
+    # =====================================================
+    # CONTEXT
+    # =====================================================
+
+    context = {
+
+        "billings": billings,
+
+        "billing_coverage":
+            billing_coverage,
+
+        "billing_coverage_display":
+            billing_coverage_display,
+
+        "selected_billing_date":
+            selected_billing_date,
+
+    }
+
 
     return render(
         request,
         "admin/unpaid_report.html",
-        {
-            "billings": billings,
-            "billing_coverage": billing_coverage,
-        }
+        context
     )
 
 @login_required(login_url="login-view")
