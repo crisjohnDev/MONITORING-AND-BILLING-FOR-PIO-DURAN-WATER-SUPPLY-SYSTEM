@@ -1,560 +1,7 @@
-```html
+
 {% extends 'admin.html' %}
 
 {% block content %}
-
-<div class="workspace">
-
-    <!-- =========================================================
-         ACTION BAR
-    ========================================================== -->
-    <div class="action-bar">
-
-        <div class="management-controls">
-
-            <!-- Add Customer -->
-            <a href="{% url 'add-customer' %}" class="btn-control primary">
-                <i class="fa-solid fa-user-plus"></i>
-                Add Customer
-            </a>
-
-            <!-- Upload Existing Consumers -->
-            <button
-                type="button"
-                class="btn-control secondary"
-                id="openUploadBtn"
-                onclick="toggleUploadModal(true)"
-            >
-                <i class="fa-solid fa-file-excel"></i>
-                Upload Existing Consumers
-            </button>
-
-        </div>
-
-
-        <!-- =====================================================
-             FILTERS
-        ====================================================== -->
-        <div class="table-filters">
-
-            <!-- Barangay Filter -->
-            <div class="filter-wrapper">
-
-                <i class="fa-solid fa-map-location-dot filter-icon"></i>
-
-                <select
-                    id="barangayFilter"
-                    onchange="filterCustomerTable()"
-                >
-                    <option value="">All Barangays</option>
-
-                    {% for b in barangays_list %}
-                        <option value="{{ b.barangay_name|lower }}">
-                            {{ b.barangay_name }}
-                        </option>
-                    {% empty %}
-                        <option value="" disabled>
-                            No barangays available
-                        </option>
-                    {% endfor %}
-
-                </select>
-
-            </div>
-
-
-            <!-- Search -->
-            <div class="search-wrapper">
-
-                <i class="fa-solid fa-magnifying-glass search-icon"></i>
-
-                <input
-                    type="text"
-                    id="tableSearch"
-                    placeholder="Search customer registry records..."
-                    onkeyup="filterCustomerTable()"
-                >
-
-            </div>
-
-
-            <!-- Clear Filters -->
-            <button
-                type="button"
-                class="btn-clear-filter"
-                onclick="clearCustomerFilters()"
-            >
-                <i class="fa-solid fa-filter-circle-xmark"></i>
-                Clear
-            </button>
-
-        </div>
-
-    </div>
-
-
-    <!-- =========================================================
-         CUSTOMER TABLE
-    ========================================================== -->
-    <div class="data-section">
-
-        <div class="section-header">
-            <h3>Registered Consumer Information Registry</h3>
-        </div>
-
-
-        <div class="table-container">
-
-            <table class="classic-table" id="customerTable">
-
-                <thead>
-                    <tr>
-                        <th>Submitter No.</th>
-                        <th>Full Name</th>
-                        <th>Barangay</th>
-                        <th>Status</th>
-                        <th style="text-align: center;">
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
-
-
-                <tbody>
-
-                    {% for customer in customers %}
-
-                    <tr>
-
-                        <!-- Submitter Number -->
-                        <td>
-                            {{ customer.submitter_no }}
-                        </td>
-
-
-                        <!-- Full Name -->
-                        <td class="font-semibold">
-                            {{ customer.firstname }}
-                            {{ customer.lastname }}
-                        </td>
-
-
-                        <!-- Barangay -->
-                        <td>
-                            {{ customer.address }}
-                        </td>
-
-
-                        <!-- Status -->
-                        <td style="text-align: center;">
-
-                            {% if customer.is_active %}
-
-                                <span class="status-badge active">
-                                    <i class="fa-solid fa-circle"></i>
-                                    Active
-                                </span>
-
-                            {% else %}
-
-                                <span class="status-badge inactive">
-                                    <i class="fa-solid fa-circle"></i>
-                                    Disconnected
-                                </span>
-
-                            {% endif %}
-
-                        </td>
-
-
-                        <!-- Actions -->
-                        <td>
-
-                            <div class="action-btn-group">
-
-                                <!-- View Profile -->
-                                <a
-                                    href="{% url 'customer_profile' customer.id %}"
-                                    class="btn-action profile"
-                                >
-                                    <i class="fa-solid fa-address-card"></i>
-                                    View Profile
-                                </a>
-
-
-                                <!-- Edit Profile -->
-                                <a
-                                    href="{% url 'update_customer' customer.id %}"
-                                    class="btn-action edit"
-                                >
-                                    <i class="fa-solid fa-user-pen"></i>
-                                    Edit Profile
-                                </a>
-
-
-                                {% if customer.is_active %}
-
-                                    <!-- Disconnect -->
-                                    <button
-                                        type="button"
-                                        class="btn-action disconnect"
-                                        onclick="openConfirmationModal(
-                                            'disconnect-form-{{ customer.id }}',
-                                            'Disconnect Consumer',
-                                            'Are you sure you want to disconnect {{ customer.firstname }} {{ customer.lastname }}?'
-                                        )"
-                                    >
-                                        <i class="fa-solid fa-plug-circle-xmark"></i>
-                                        Disconnect
-                                    </button>
-
-
-                                    <form
-                                        id="disconnect-form-{{ customer.id }}"
-                                        method="POST"
-                                        action="{% url 'disconnect_customer' customer.id %}"
-                                        style="display: none;"
-                                    >
-                                        {% csrf_token %}
-                                    </form>
-
-
-                                {% else %}
-
-                                    <!-- Reconnect -->
-                                    <button
-                                        type="button"
-                                        class="btn-action reconnect"
-                                        onclick="openConfirmationModal(
-                                            'reconnect-form-{{ customer.id }}',
-                                            'Reconnect Consumer',
-                                            'Reconnect {{ customer.firstname }} {{ customer.lastname }} to the water service?'
-                                        )"
-                                    >
-                                        <i class="fa-solid fa-plug-circle-check"></i>
-                                        Reconnect
-                                    </button>
-
-
-                                    <form
-                                        id="reconnect-form-{{ customer.id }}"
-                                        method="POST"
-                                        action="{% url 'reconnect_customer' customer.id %}"
-                                        style="display: none;"
-                                    >
-                                        {% csrf_token %}
-                                    </form>
-
-                                {% endif %}
-
-
-                                <!-- Delete -->
-                                <button
-                                    type="button"
-                                    class="btn-action delete"
-                                    onclick="openConfirmationModal(
-                                        'delete-form-{{ customer.id }}',
-                                        'Delete Record',
-                                        'Are you sure you want to permanently delete {{ customer.firstname }} {{ customer.lastname }}?'
-                                    )"
-                                >
-                                    <i class="fa-solid fa-trash-can"></i>
-                                    Delete
-                                </button>
-
-
-                                <form
-                                    id="delete-form-{{ customer.id }}"
-                                    method="POST"
-                                    action="{% url 'delete_customer' customer.id %}"
-                                    style="display: none;"
-                                >
-                                    {% csrf_token %}
-                                </form>
-
-                            </div>
-
-                        </td>
-
-                    </tr>
-
-
-                    {% empty %}
-
-                    <tr>
-
-                        <td
-                            colspan="5"
-                            style="text-align: center;"
-                        >
-                            No customers found.
-                        </td>
-
-                    </tr>
-
-                    {% endfor %}
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </div>
-
-</div>
-
-
-<!-- =============================================================
-     UPLOAD MODAL
-============================================================== -->
-
-<div
-    id="uploadModal"
-    class="modal-overlay"
-    style="display: none;"
->
-
-    <div class="classic-modal">
-
-        <!-- Modal Header -->
-        <div class="modal-header">
-
-            <h3>
-                <i
-                    class="fa-solid fa-file-excel"
-                    style="color: #15803d; margin-right: 8px;"
-                ></i>
-
-                Import Customers Matrix
-            </h3>
-
-
-            <button
-                type="button"
-                class="close-modal-btn"
-                id="closeModalCross"
-                onclick="toggleUploadModal(false)"
-            >
-                &times;
-            </button>
-
-        </div>
-
-
-        <!-- Upload Form -->
-        <form
-            method="POST"
-            action="{% url 'import_customers' %}"
-            enctype="multipart/form-data"
-            id="excelUploadForm"
-            onsubmit="handleFormSubmit(event)"
-        >
-
-            {% csrf_token %}
-
-
-            <div class="modal-body">
-
-                <p>
-                    Select target destination allocation parameters
-                    along with spreadsheet matrix file
-                    (<code>.xlsx</code>, <code>.xls</code>).
-                </p>
-
-
-                <!-- Barangay -->
-                <div class="modal-form-group">
-
-                    <label for="modalBarangaySelect">
-                        Target Allocation Barangay
-                    </label>
-
-
-                    <div class="select-wrapper">
-
-                        <i
-                            class="fa-solid fa-map-location-dot select-icon"
-                        ></i>
-
-
-                        <select
-                            id="modalBarangaySelect"
-                            name="barangay_id"
-                            required
-                        >
-
-                            <option
-                                value=""
-                                disabled
-                                selected
-                            >
-                                Choose target Barangay for import...
-                            </option>
-
-
-                            {% for b in barangays_list %}
-
-                                <option value="{{ b.id }}">
-                                    {{ b.barangay_name }}
-                                    ({{ b.municipality }})
-                                </option>
-
-                            {% empty %}
-
-                                <option disabled>
-                                    No barangays available
-                                </option>
-
-                            {% endfor %}
-
-                        </select>
-
-                    </div>
-
-                </div>
-
-
-                <!-- File Upload -->
-                <div
-                    class="file-drop-area"
-                    id="dropZoneContainer"
-                >
-
-                    <input
-                        type="file"
-                        name="excel_file"
-                        id="excelFileInput"
-                        accept=".xlsx,.xls"
-                        required
-                        onchange="handleFileSelection(this)"
-                    >
-
-
-                    <label
-                        for="excelFileInput"
-                        id="fileInputLabel"
-                    >
-
-                        <i
-                            class="fa-solid fa-cloud-arrow-up"
-                            id="uploadIcon"
-                        ></i>
-
-
-                        <span id="fileLabelText">
-                            Choose file or drag here
-                        </span>
-
-                    </label>
-
-                </div>
-
-            </div>
-
-
-            <!-- Modal Footer -->
-            <div class="modal-footer">
-
-                <button
-                    type="button"
-                    class="btn-action cancel"
-                    id="cancelModalBtn"
-                    onclick="toggleUploadModal(false)"
-                >
-                    Cancel
-                </button>
-
-
-                <button
-                    type="submit"
-                    class="btn-action confirm-upload"
-                    id="submitModalBtn"
-                >
-
-                    <i
-                        class="fa-solid fa-upload"
-                        id="submitIcon"
-                    ></i>
-
-                    <span id="submitText">
-                        Upload File
-                    </span>
-
-                </button>
-
-            </div>
-
-        </form>
-
-    </div>
-
-</div>
-
-
-<!-- =============================================================
-     CONFIRMATION DIALOG
-============================================================== -->
-
-<dialog
-    id="actionConfirmModal"
-    class="confirm-dialog-overlay"
->
-
-    <div class="classic-modal confirmation-variant">
-
-        <div class="modal-header">
-
-            <h3 id="confirmModalTitle">
-                Confirm System Action
-            </h3>
-
-
-            <button
-                type="button"
-                class="close-modal-btn"
-                onclick="closeConfirmationModal()"
-            >
-                &times;
-            </button>
-
-        </div>
-
-
-        <div class="modal-body">
-
-            <p id="confirmModalMessage">
-                Are you sure you want to perform this administrative operation?
-            </p>
-
-        </div>
-
-
-        <div class="modal-footer">
-
-            <button
-                type="button"
-                class="btn-action cancel"
-                onclick="closeConfirmationModal()"
-            >
-                Cancel Process
-            </button>
-
-
-            <button
-                type="button"
-                id="confirmModalSubmitBtn"
-                class="btn-action"
-            >
-                Proceed Action
-            </button>
-
-        </div>
-
-    </div>
-
-</dialog>
-
 
 <!-- =============================================================
      CSS
@@ -1204,6 +651,557 @@
 
 </style>
 
+<div class="workspace">
+
+    <!-- =========================================================
+         ACTION BAR
+    ========================================================== -->
+    <div class="action-bar">
+
+        <div class="management-controls">
+
+            <!-- Add Customer -->
+            <a href="{% url 'add-customer' %}" class="btn-control primary">
+                <i class="fa-solid fa-user-plus"></i>
+                Add Customer
+            </a>
+
+            <!-- Upload Existing Consumers -->
+            <button
+                type="button"
+                class="btn-control secondary"
+                id="openUploadBtn"
+                onclick="toggleUploadModal(true)"
+            >
+                <i class="fa-solid fa-file-excel"></i>
+                Upload Existing Consumers
+            </button>
+
+        </div>
+
+
+        <!-- =====================================================
+             FILTERS
+        ====================================================== -->
+        <div class="table-filters">
+
+            <!-- Barangay Filter -->
+            <div class="filter-wrapper">
+
+                <i class="fa-solid fa-map-location-dot filter-icon"></i>
+
+                <select
+                    id="barangayFilter"
+                    onchange="filterCustomerTable()"
+                >
+                    <option value="">All Barangays</option>
+
+                    {% for b in barangays_list %}
+                        <option value="{{ b.barangay_name|lower }}">
+                            {{ b.barangay_name }}
+                        </option>
+                    {% empty %}
+                        <option value="" disabled>
+                            No barangays available
+                        </option>
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <!-- Search -->
+            <div class="search-wrapper">
+
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+
+                <input
+                    type="text"
+                    id="tableSearch"
+                    placeholder="Search customer registry records..."
+                    onkeyup="filterCustomerTable()"
+                >
+
+            </div>
+
+
+            <!-- Clear Filters -->
+            <button
+                type="button"
+                class="btn-clear-filter"
+                onclick="clearCustomerFilters()"
+            >
+                <i class="fa-solid fa-filter-circle-xmark"></i>
+                Clear
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         CUSTOMER TABLE
+    ========================================================== -->
+    <div class="data-section">
+
+        <div class="section-header">
+            <h3>Registered Consumer Information Registry</h3>
+        </div>
+
+
+        <div class="table-container">
+
+            <table class="classic-table" id="customerTable">
+
+                <thead>
+                    <tr>
+                        <th>Submitter No.</th>
+                        <th>Full Name</th>
+                        <th>Barangay</th>
+                        <th>Status</th>
+                        <th style="text-align: center;">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+
+
+                <tbody>
+
+                    {% for customer in customers %}
+
+                    <tr>
+
+                        <!-- Submitter Number -->
+                        <td>
+                            {{ customer.submitter_no }}
+                        </td>
+
+
+                        <!-- Full Name -->
+                        <td class="font-semibold">
+                            {{ customer.firstname }}
+                            {{ customer.lastname }}
+                        </td>
+
+
+                        <!-- Barangay -->
+                        <td>
+                            {{ customer.address }}
+                        </td>
+
+
+                        <!-- Status -->
+                        <td style="text-align: center;">
+
+                            {% if customer.is_active %}
+
+                                <span class="status-badge active">
+                                    <i class="fa-solid fa-circle"></i>
+                                    Active
+                                </span>
+
+                            {% else %}
+
+                                <span class="status-badge inactive">
+                                    <i class="fa-solid fa-circle"></i>
+                                    Disconnected
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <!-- Actions -->
+                        <td>
+
+                            <div class="action-btn-group">
+
+                                <!-- View Profile -->
+                                <a
+                                    href="{% url 'customer_profile' customer.id %}"
+                                    class="btn-action profile"
+                                >
+                                    <i class="fa-solid fa-address-card"></i>
+                                    View Profile
+                                </a>
+
+
+                                <!-- Edit Profile -->
+                                <a
+                                    href="{% url 'update_customer' customer.id %}"
+                                    class="btn-action edit"
+                                >
+                                    <i class="fa-solid fa-user-pen"></i>
+                                    Edit Profile
+                                </a>
+
+
+                                {% if customer.is_active %}
+
+                                    <!-- Disconnect -->
+                                    <button
+                                        type="button"
+                                        class="btn-action disconnect"
+                                        onclick="openConfirmationModal(
+                                            'disconnect-form-{{ customer.id }}',
+                                            'Disconnect Consumer',
+                                            'Are you sure you want to disconnect {{ customer.firstname }} {{ customer.lastname }}?'
+                                        )"
+                                    >
+                                        <i class="fa-solid fa-plug-circle-xmark"></i>
+                                        Disconnect
+                                    </button>
+
+
+                                    <form
+                                        id="disconnect-form-{{ customer.id }}"
+                                        method="POST"
+                                        action="{% url 'disconnect_customer' customer.id %}"
+                                        style="display: none;"
+                                    >
+                                        {% csrf_token %}
+                                    </form>
+
+
+                                {% else %}
+
+                                    <!-- Reconnect -->
+                                    <button
+                                        type="button"
+                                        class="btn-action reconnect"
+                                        onclick="openConfirmationModal(
+                                            'reconnect-form-{{ customer.id }}',
+                                            'Reconnect Consumer',
+                                            'Reconnect {{ customer.firstname }} {{ customer.lastname }} to the water service?'
+                                        )"
+                                    >
+                                        <i class="fa-solid fa-plug-circle-check"></i>
+                                        Reconnect
+                                    </button>
+
+
+                                    <form
+                                        id="reconnect-form-{{ customer.id }}"
+                                        method="POST"
+                                        action="{% url 'reconnect_customer' customer.id %}"
+                                        style="display: none;"
+                                    >
+                                        {% csrf_token %}
+                                    </form>
+
+                                {% endif %}
+
+
+                                <!-- Delete -->
+                                <button
+                                    type="button"
+                                    class="btn-action delete"
+                                    onclick="openConfirmationModal(
+                                        'delete-form-{{ customer.id }}',
+                                        'Delete Record',
+                                        'Are you sure you want to permanently delete {{ customer.firstname }} {{ customer.lastname }}?'
+                                    )"
+                                >
+                                    <i class="fa-solid fa-trash-can"></i>
+                                    Delete
+                                </button>
+
+
+                                <form
+                                    id="delete-form-{{ customer.id }}"
+                                    method="POST"
+                                    action="{% url 'delete_customer' customer.id %}"
+                                    style="display: none;"
+                                >
+                                    {% csrf_token %}
+                                </form>
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+
+                    {% empty %}
+
+                    <tr>
+
+                        <td
+                            colspan="5"
+                            style="text-align: center;"
+                        >
+                            No customers found.
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =============================================================
+     UPLOAD MODAL
+============================================================== -->
+
+<div
+    id="uploadModal"
+    class="modal-overlay"
+    style="display: none;"
+>
+
+    <div class="classic-modal">
+
+        <!-- Modal Header -->
+        <div class="modal-header">
+
+            <h3>
+                <i
+                    class="fa-solid fa-file-excel"
+                    style="color: #15803d; margin-right: 8px;"
+                ></i>
+
+                Import Customers Matrix
+            </h3>
+
+
+            <button
+                type="button"
+                class="close-modal-btn"
+                id="closeModalCross"
+                onclick="toggleUploadModal(false)"
+            >
+                &times;
+            </button>
+
+        </div>
+
+
+        <!-- Upload Form -->
+        <form
+            method="POST"
+            action="{% url 'import_customers' %}"
+            enctype="multipart/form-data"
+            id="excelUploadForm"
+            onsubmit="handleFormSubmit(event)"
+        >
+
+            {% csrf_token %}
+
+
+            <div class="modal-body">
+
+                <p>
+                    Select target destination allocation parameters
+                    along with spreadsheet matrix file
+                    (<code>.xlsx</code>, <code>.xls</code>).
+                </p>
+
+
+                <!-- Barangay -->
+                <div class="modal-form-group">
+
+                    <label for="modalBarangaySelect">
+                        Target Allocation Barangay
+                    </label>
+
+
+                    <div class="select-wrapper">
+
+                        <i
+                            class="fa-solid fa-map-location-dot select-icon"
+                        ></i>
+
+
+                        <select
+                            id="modalBarangaySelect"
+                            name="barangay_id"
+                            required
+                        >
+
+                            <option
+                                value=""
+                                disabled
+                                selected
+                            >
+                                Choose target Barangay for import...
+                            </option>
+
+
+                            {% for b in barangays_list %}
+
+                                <option value="{{ b.id }}">
+                                    {{ b.barangay_name }}
+                                    ({{ b.municipality }})
+                                </option>
+
+                            {% empty %}
+
+                                <option disabled>
+                                    No barangays available
+                                </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+
+                <!-- File Upload -->
+                <div
+                    class="file-drop-area"
+                    id="dropZoneContainer"
+                >
+
+                    <input
+                        type="file"
+                        name="excel_file"
+                        id="excelFileInput"
+                        accept=".xlsx,.xls"
+                        required
+                        onchange="handleFileSelection(this)"
+                    >
+
+
+                    <label
+                        for="excelFileInput"
+                        id="fileInputLabel"
+                    >
+
+                        <i
+                            class="fa-solid fa-cloud-arrow-up"
+                            id="uploadIcon"
+                        ></i>
+
+
+                        <span id="fileLabelText">
+                            Choose file or drag here
+                        </span>
+
+                    </label>
+
+                </div>
+
+            </div>
+
+
+            <!-- Modal Footer -->
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn-action cancel"
+                    id="cancelModalBtn"
+                    onclick="toggleUploadModal(false)"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    type="submit"
+                    class="btn-action confirm-upload"
+                    id="submitModalBtn"
+                >
+
+                    <i
+                        class="fa-solid fa-upload"
+                        id="submitIcon"
+                    ></i>
+
+                    <span id="submitText">
+                        Upload File
+                    </span>
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- =============================================================
+     CONFIRMATION DIALOG
+============================================================== -->
+
+<dialog
+    id="actionConfirmModal"
+    class="confirm-dialog-overlay"
+>
+
+    <div class="classic-modal confirmation-variant">
+
+        <div class="modal-header">
+
+            <h3 id="confirmModalTitle">
+                Confirm System Action
+            </h3>
+
+
+            <button
+                type="button"
+                class="close-modal-btn"
+                onclick="closeConfirmationModal()"
+            >
+                &times;
+            </button>
+
+        </div>
+
+
+        <div class="modal-body">
+
+            <p id="confirmModalMessage">
+                Are you sure you want to perform this administrative operation?
+            </p>
+
+        </div>
+
+
+        <div class="modal-footer">
+
+            <button
+                type="button"
+                class="btn-action cancel"
+                onclick="closeConfirmationModal()"
+            >
+                Cancel Process
+            </button>
+
+
+            <button
+                type="button"
+                id="confirmModalSubmitBtn"
+                class="btn-action"
+            >
+                Proceed Action
+            </button>
+
+        </div>
+
+    </div>
+
+</dialog>
 
 <!-- =============================================================
      JAVASCRIPT
