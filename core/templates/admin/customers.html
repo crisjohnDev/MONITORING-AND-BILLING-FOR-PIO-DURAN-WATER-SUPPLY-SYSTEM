@@ -3,11 +3,11 @@
 
 {% block content %}
 
-<!-- =============================================================
-     CSS
-============================================================== -->
-
 <style>
+
+/* =========================================================
+   STATUS BADGES
+========================================================= */
 
 .status-badge {
     display: inline-flex;
@@ -36,7 +36,7 @@
 
 .btn-action.reconnect {
     background: #16a34a;
-    color: #fff;
+    color: #ffffff;
     border: 1px solid #16a34a;
 }
 
@@ -120,7 +120,9 @@
 }
 
 
-/* Barangay Filter */
+/* =========================================================
+   BARANGAY FILTER
+========================================================= */
 
 .filter-wrapper {
     position: relative;
@@ -149,7 +151,9 @@
     border-radius: 3px;
     box-sizing: border-box;
     appearance: none;
+
     background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+
     background-repeat: no-repeat;
     background-position: right 12px center;
     background-size: 12px;
@@ -182,6 +186,7 @@
     transform: translateY(-50%);
     color: #94a3b8;
     font-size: 13px;
+    pointer-events: none;
 }
 
 .search-wrapper input[type="text"] {
@@ -217,9 +222,11 @@
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
+
     display: inline-flex;
     align-items: center;
     gap: 6px;
+
     transition: all 0.15s ease;
 }
 
@@ -239,79 +246,214 @@
     color: var(--bg-navy);
 }
 
-.action-btn-group {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
+
+/* =========================================================
+   THREE-DOT ACTION MENU
+========================================================= */
+
+.action-menu {
+    position: relative;
+    display: inline-block;
 }
 
-.btn-action {
-    padding: 6px 12px;
-    font-size: 12px;
-    font-weight: 600;
-    border-radius: 3px;
-    cursor: pointer;
+
+.action-menu-trigger {
+    width: 34px;
+    height: 34px;
+
+    padding: 0;
+
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    transition: all 0.15s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    text-decoration: none;
-    box-sizing: border-box;
+    justify-content: center;
+
+    background: #ffffff;
+    color: var(--secondary-text);
+
+    border: 1px solid var(--border-classic);
+    border-radius: 3px;
+
+    font-size: 17px;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease;
+}
+
+
+.action-menu-trigger:hover,
+.action-menu-trigger.active {
+    background: #f8fafc;
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
 }
 
 
 /* =========================================================
-   ACTION BUTTON COLORS
+   ACTION DROPDOWN
 ========================================================= */
 
-.btn-action.profile {
-    background-color: #ffffff;
-    border: 1px solid var(--accent-blue);
+.action-menu-dropdown {
+    position: absolute;
+
+    right: 0;
+    top: calc(100% + 6px);
+
+    width: 190px;
+
+    background: #ffffff;
+
+    border: 1px solid var(--border-classic);
+    border-radius: 4px;
+
+    box-shadow:
+        0 10px 15px -3px rgba(0, 0, 0, 0.10),
+        0 4px 6px -4px rgba(0, 0, 0, 0.10);
+
+    z-index: 1000;
+
+    display: none;
+
+    overflow: hidden;
+}
+
+
+.action-menu-dropdown.show {
+    display: block;
+}
+
+
+/* =========================================================
+   ACTION MENU ITEMS
+========================================================= */
+
+.action-menu-item {
+    width: 100%;
+    min-height: 40px;
+
+    padding: 9px 13px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    background: #ffffff;
+
+    border: none;
+
+    color: var(--primary-text);
+
+    font-size: 12px;
+    font-weight: 600;
+
+    text-decoration: none;
+    text-align: left;
+
+    box-sizing: border-box;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+}
+
+
+.action-menu-item i {
+    width: 16px;
+
+    text-align: center;
+
+    font-size: 13px;
+}
+
+
+.action-menu-item:hover {
+    background: #f8fafc;
+}
+
+
+/* =========================================================
+   ACTION COLORS
+========================================================= */
+
+.action-menu-item.profile {
     color: var(--accent-blue);
 }
 
-.btn-action.profile:hover {
-    background-color: var(--accent-blue);
-    color: #ffffff;
+.action-menu-item.profile:hover {
+    background: #eff6ff;
 }
 
 
-.btn-action.edit {
-    background-color: #ffffff;
-    border: 1px solid var(--accent-gold);
+.action-menu-item.edit {
     color: var(--accent-gold);
 }
 
-.btn-action.edit:hover {
-    background-color: var(--accent-gold);
-    color: #ffffff;
+.action-menu-item.edit:hover {
+    background: #fff7ed;
 }
 
 
-.btn-action.disconnect {
-    background-color: #ffffff;
-    border: 1px solid #f97316;
+.action-menu-item.disconnect {
     color: #f97316;
 }
 
-.btn-action.disconnect:hover {
-    background-color: #f97316;
-    color: #ffffff;
+.action-menu-item.disconnect:hover {
+    background: #fff7ed;
 }
 
 
-.btn-action.delete {
-    background-color: #ffffff;
-    border: 1px solid #dc2626;
+.action-menu-item.reconnect {
+    color: #16a34a;
+}
+
+.action-menu-item.reconnect:hover {
+    background: #f0fdf4;
+}
+
+
+.action-menu-item.delete {
     color: #dc2626;
 }
 
-.btn-action.delete:hover {
-    background-color: #dc2626;
-    color: #ffffff;
+.action-menu-item.delete:hover {
+    background: #fef2f2;
+}
+
+
+/* =========================================================
+   ACTION DIVIDER
+========================================================= */
+
+.action-menu-divider {
+    height: 1px;
+
+    background: var(--border-classic);
+
+    margin: 3px 0;
+}
+
+
+/* =========================================================
+   TABLE OVERFLOW
+========================================================= */
+
+.table-container {
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+.classic-table {
+    overflow: visible;
+}
+
+.classic-table td {
+    position: relative;
 }
 
 
@@ -321,44 +463,61 @@
 
 .modal-overlay {
     position: fixed;
+
     top: 0;
     left: 0;
+
     width: 100vw;
     height: 100vh;
+
     background-color: rgba(15, 29, 58, 0.4);
+
     backdrop-filter: blur(2px);
+
     z-index: 100;
+
     display: flex;
+
     align-items: center;
     justify-content: center;
 }
 
 
-/* Native Dialog */
+/* =========================================================
+   NATIVE DIALOG
+========================================================= */
 
 .confirm-dialog-overlay {
     border: none;
     padding: 0;
+
     background: transparent;
+
     z-index: 110;
+
     max-width: 100vw;
     max-height: 100vh;
 }
 
 .confirm-dialog-overlay[open] {
     display: flex;
+
     align-items: center;
     justify-content: center;
+
     position: fixed;
+
     top: 0;
     right: 0;
     bottom: 0;
     left: 0;
+
     margin: auto;
 }
 
 .confirm-dialog-overlay::backdrop {
     background-color: rgba(15, 29, 58, 0.4);
+
     backdrop-filter: blur(2px);
 }
 
@@ -369,15 +528,21 @@
 
 .classic-modal {
     background-color: #ffffff;
+
     width: 100%;
     max-width: 480px;
+
     border-radius: 4px;
+
     border: 1px solid var(--border-classic);
+
     box-shadow:
-        0 20px 25px -5px rgba(0,0,0,0.1),
-        0 10px 10px -5px rgba(0,0,0,0.04);
+        0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
     overflow: hidden;
 }
+
 
 .confirmation-variant {
     width: 420px;
@@ -391,26 +556,40 @@
 
 .modal-header {
     padding: 16px 24px;
+
     border-bottom: 1px solid var(--border-classic);
+
     display: flex;
+
     align-items: center;
     justify-content: space-between;
+
     background-color: #f8fafc;
 }
 
+
 .modal-header h3 {
     font-size: 14px;
+
     font-weight: 700;
+
     color: var(--bg-navy);
+
     text-transform: uppercase;
+
     letter-spacing: 0.5px;
 }
 
+
 .close-modal-btn {
     background: none;
+
     border: none;
+
     font-size: 24px;
+
     color: var(--secondary-text);
+
     cursor: pointer;
 }
 
@@ -421,15 +600,22 @@
 
 .modal-body {
     padding: 24px;
+
     display: flex;
+
     flex-direction: column;
+
     gap: 16px;
 }
 
+
 .modal-body p {
     font-size: 13px;
+
     color: var(--secondary-text);
+
     margin-bottom: 4px;
+
     line-height: 1.5;
 }
 
@@ -440,109 +626,162 @@
 
 .modal-form-group {
     display: flex;
+
     flex-direction: column;
+
     gap: 6px;
 }
 
+
 .modal-form-group label {
     font-size: 11px;
+
     font-weight: 700;
+
     color: var(--bg-navy);
+
     text-transform: uppercase;
+
     letter-spacing: 0.5px;
 }
 
 
-/* Select */
+/* =========================================================
+   SELECT
+========================================================= */
 
 .select-wrapper {
     position: relative;
+
     width: 100%;
 }
+
 
 .select-icon {
     position: absolute;
+
     left: 12px;
     top: 50%;
+
     transform: translateY(-50%);
+
     color: #94a3b8;
+
     font-size: 13px;
+
     pointer-events: none;
 }
 
+
 .select-wrapper select {
     width: 100%;
+
     height: 38px;
+
     padding: 6px 36px;
+
     font-size: 13px;
+
     color: var(--primary-text);
+
     background-color: #ffffff;
+
     border: 1px solid var(--border-classic);
+
     border-radius: 3px;
+
     appearance: none;
 
     background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 
     background-repeat: no-repeat;
+
     background-position: right 12px center;
+
     background-size: 12px;
+
     cursor: pointer;
 }
 
+
 .select-wrapper select:focus {
     outline: none;
+
     border-color: var(--accent-blue);
 }
 
 
 /* =========================================================
-   FILE DROP
+   FILE DROP AREA
 ========================================================= */
 
 .file-drop-area {
     border: 2px dashed var(--border-classic);
+
     border-radius: 4px;
+
     padding: 30px 20px;
+
     text-align: center;
+
     position: relative;
+
     background-color: #f8fafc;
 }
 
+
 .file-drop-area:hover {
     border-color: var(--accent-blue);
+
     background-color: #f1f5f9;
 }
 
+
 .file-drop-area.file-staged {
     border-color: #16a34a;
+
     background-color: #f0fdf4;
 }
 
+
 .file-drop-area input[type="file"] {
     position: absolute;
+
     width: 100%;
     height: 100%;
+
     top: 0;
     left: 0;
+
     opacity: 0;
+
     cursor: pointer;
 }
 
+
 .file-drop-area i {
     font-size: 28px;
+
     color: #94a3b8;
+
     margin-bottom: 8px;
+
     display: block;
 }
+
 
 .file-drop-area.file-staged i {
     color: #16a34a;
 }
 
+
 .file-drop-area span {
     font-size: 13px;
+
     font-weight: 500;
+
     color: var(--primary-text);
+
     word-break: break-all;
 }
 
@@ -553,40 +792,138 @@
 
 .modal-footer {
     padding: 16px 24px;
+
     border-top: 1px solid var(--border-classic);
+
     display: flex;
+
     justify-content: flex-end;
+
     gap: 12px;
+
     background-color: #f8fafc;
 }
 
+
+/* =========================================================
+   MODAL BUTTONS
+========================================================= */
+
+.btn-action {
+    padding: 6px 12px;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    border-radius: 3px;
+
+    cursor: pointer;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    transition: all 0.15s ease;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.3px;
+
+    text-decoration: none;
+
+    box-sizing: border-box;
+}
+
+
 .btn-action.cancel {
     background: none;
+
     border: 1px solid var(--border-classic);
+
     color: var(--secondary-text);
 }
+
 
 .btn-action.cancel:hover {
     background-color: #f1f5f9;
 }
 
+
 .btn-action.confirm-upload {
     background-color: var(--bg-navy);
+
     border: 1px solid var(--bg-navy);
+
     color: #ffffff;
 }
+
 
 .btn-action.confirm-upload:hover {
     background-color: var(--sidebar-bg);
 }
 
 
-/* Disabled */
+.btn-action.disconnect {
+    background-color: #ffffff;
+
+    border: 1px solid #f97316;
+
+    color: #f97316;
+}
+
+
+.btn-action.disconnect:hover {
+    background-color: #f97316;
+
+    color: #ffffff;
+}
+
+
+.btn-action.delete {
+    background-color: #ffffff;
+
+    border: 1px solid #dc2626;
+
+    color: #dc2626;
+}
+
+
+.btn-action.delete:hover {
+    background-color: #dc2626;
+
+    color: #ffffff;
+}
+
+
+.btn-action.reconnect {
+    background-color: #ffffff;
+
+    border: 1px solid #16a34a;
+
+    color: #16a34a;
+}
+
+
+.btn-action.reconnect:hover {
+    background-color: #16a34a;
+
+    color: #ffffff;
+}
+
+
+/* =========================================================
+   DISABLED
+========================================================= */
 
 .btn-action:disabled,
 .close-modal-btn:disabled {
     opacity: 0.6;
+
     cursor: not-allowed !important;
+
     pointer-events: none;
 }
 
@@ -611,11 +948,13 @@
 
     .filter-wrapper {
         flex: 1;
+
         min-width: 180px;
     }
 
     .search-wrapper {
         flex: 1;
+
         min-width: 220px;
     }
 
@@ -630,11 +969,13 @@
 
     .btn-control {
         width: 100%;
+
         justify-content: center;
     }
 
     .table-filters {
         flex-direction: column;
+
         align-items: stretch;
     }
 
@@ -647,26 +988,40 @@
         justify-content: center;
     }
 
+    .action-menu-dropdown {
+        right: 0;
+
+        width: 180px;
+    }
+
 }
 
 </style>
+
 
 <div class="workspace">
 
     <!-- =========================================================
          ACTION BAR
     ========================================================== -->
+
     <div class="action-bar">
 
         <div class="management-controls">
 
             <!-- Add Customer -->
-            <a href="{% url 'add-customer' %}" class="btn-control primary">
+
+            <a
+                href="{% url 'add-customer' %}"
+                class="btn-control primary"
+            >
                 <i class="fa-solid fa-user-plus"></i>
                 Add Customer
             </a>
 
+
             <!-- Upload Existing Consumers -->
+
             <button
                 type="button"
                 class="btn-control secondary"
@@ -683,27 +1038,40 @@
         <!-- =====================================================
              FILTERS
         ====================================================== -->
+
         <div class="table-filters">
 
             <!-- Barangay Filter -->
+
             <div class="filter-wrapper">
 
-                <i class="fa-solid fa-map-location-dot filter-icon"></i>
+                <i
+                    class="fa-solid fa-map-location-dot filter-icon"
+                ></i>
+
 
                 <select
                     id="barangayFilter"
                     onchange="filterCustomerTable()"
                 >
-                    <option value="">All Barangays</option>
+
+                    <option value="">
+                        All Barangays
+                    </option>
+
 
                     {% for b in barangays_list %}
+
                         <option value="{{ b.barangay_name|lower }}">
                             {{ b.barangay_name }}
                         </option>
+
                     {% empty %}
+
                         <option value="" disabled>
                             No barangays available
                         </option>
+
                     {% endfor %}
 
                 </select>
@@ -712,9 +1080,13 @@
 
 
             <!-- Search -->
+
             <div class="search-wrapper">
 
-                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <i
+                    class="fa-solid fa-magnifying-glass search-icon"
+                ></i>
+
 
                 <input
                     type="text"
@@ -727,13 +1099,17 @@
 
 
             <!-- Clear Filters -->
+
             <button
                 type="button"
                 class="btn-clear-filter"
                 onclick="clearCustomerFilters()"
             >
+
                 <i class="fa-solid fa-filter-circle-xmark"></i>
+
                 Clear
+
             </button>
 
         </div>
@@ -744,27 +1120,51 @@
     <!-- =========================================================
          CUSTOMER TABLE
     ========================================================== -->
+
     <div class="data-section">
 
         <div class="section-header">
-            <h3>Registered Consumer Information Registry</h3>
+
+            <h3>
+                Registered Consumer Information Registry
+            </h3>
+
         </div>
 
 
         <div class="table-container">
 
-            <table class="classic-table" id="customerTable">
+            <table
+                class="classic-table"
+                id="customerTable"
+            >
 
                 <thead>
+
                     <tr>
-                        <th>Submitter No.</th>
-                        <th>Full Name</th>
-                        <th>Barangay</th>
-                        <th>Status</th>
+
+                        <th>
+                            Submitter No.
+                        </th>
+
+                        <th>
+                            Full Name
+                        </th>
+
+                        <th>
+                            Barangay
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
                         <th style="text-align: center;">
                             Actions
                         </th>
+
                     </tr>
+
                 </thead>
 
 
@@ -775,39 +1175,52 @@
                     <tr>
 
                         <!-- Submitter Number -->
+
                         <td>
                             {{ customer.submitter_no }}
                         </td>
 
 
                         <!-- Full Name -->
+
                         <td class="font-semibold">
+
                             {{ customer.firstname }}
+
                             {{ customer.lastname }}
+
                         </td>
 
 
                         <!-- Barangay -->
+
                         <td>
                             {{ customer.address }}
                         </td>
 
 
                         <!-- Status -->
+
                         <td style="text-align: center;">
 
                             {% if customer.is_active %}
 
                                 <span class="status-badge active">
+
                                     <i class="fa-solid fa-circle"></i>
+
                                     Active
+
                                 </span>
 
                             {% else %}
 
                                 <span class="status-badge inactive">
+
                                     <i class="fa-solid fa-circle"></i>
+
                                     Disconnected
+
                                 </span>
 
                             {% endif %}
@@ -815,110 +1228,175 @@
                         </td>
 
 
-                        <!-- Actions -->
-                        <td>
+                        <!-- =================================================
+                             ACTIONS
+                        ================================================== -->
 
-                            <div class="action-btn-group">
+                        <td style="text-align: center;">
 
-                                <!-- View Profile -->
-                                <a
-                                    href="{% url 'customer_profile' customer.id %}"
-                                    class="btn-action profile"
-                                >
-                                    <i class="fa-solid fa-address-card"></i>
-                                    View Profile
-                                </a>
+                            <div class="action-menu">
 
+                                <!-- Three Dot Button -->
 
-                                <!-- Edit Profile -->
-                                <a
-                                    href="{% url 'update_customer' customer.id %}"
-                                    class="btn-action edit"
-                                >
-                                    <i class="fa-solid fa-user-pen"></i>
-                                    Edit Profile
-                                </a>
-
-
-                                {% if customer.is_active %}
-
-                                    <!-- Disconnect -->
-                                    <button
-                                        type="button"
-                                        class="btn-action disconnect"
-                                        onclick="openConfirmationModal(
-                                            'disconnect-form-{{ customer.id }}',
-                                            'Disconnect Consumer',
-                                            'Are you sure you want to disconnect {{ customer.firstname }} {{ customer.lastname }}?'
-                                        )"
-                                    >
-                                        <i class="fa-solid fa-plug-circle-xmark"></i>
-                                        Disconnect
-                                    </button>
-
-
-                                    <form
-                                        id="disconnect-form-{{ customer.id }}"
-                                        method="POST"
-                                        action="{% url 'disconnect_customer' customer.id %}"
-                                        style="display: none;"
-                                    >
-                                        {% csrf_token %}
-                                    </form>
-
-
-                                {% else %}
-
-                                    <!-- Reconnect -->
-                                    <button
-                                        type="button"
-                                        class="btn-action reconnect"
-                                        onclick="openConfirmationModal(
-                                            'reconnect-form-{{ customer.id }}',
-                                            'Reconnect Consumer',
-                                            'Reconnect {{ customer.firstname }} {{ customer.lastname }} to the water service?'
-                                        )"
-                                    >
-                                        <i class="fa-solid fa-plug-circle-check"></i>
-                                        Reconnect
-                                    </button>
-
-
-                                    <form
-                                        id="reconnect-form-{{ customer.id }}"
-                                        method="POST"
-                                        action="{% url 'reconnect_customer' customer.id %}"
-                                        style="display: none;"
-                                    >
-                                        {% csrf_token %}
-                                    </form>
-
-                                {% endif %}
-
-
-                                <!-- Delete -->
                                 <button
                                     type="button"
-                                    class="btn-action delete"
-                                    onclick="openConfirmationModal(
-                                        'delete-form-{{ customer.id }}',
-                                        'Delete Record',
-                                        'Are you sure you want to permanently delete {{ customer.firstname }} {{ customer.lastname }}?'
-                                    )"
+                                    class="action-menu-trigger"
+                                    onclick="toggleActionMenu(this)"
+                                    aria-label="Customer actions"
+                                    title="Actions"
                                 >
-                                    <i class="fa-solid fa-trash-can"></i>
-                                    Delete
+
+                                    <i class="fa-solid fa-ellipsis-vertical"></i>
+
                                 </button>
 
 
-                                <form
-                                    id="delete-form-{{ customer.id }}"
-                                    method="POST"
-                                    action="{% url 'delete_customer' customer.id %}"
-                                    style="display: none;"
-                                >
-                                    {% csrf_token %}
-                                </form>
+                                <!-- Action Dropdown -->
+
+                                <div class="action-menu-dropdown">
+
+                                    <!-- View Profile -->
+
+                                    <a
+                                        href="{% url 'customer_profile' customer.id %}"
+                                        class="action-menu-item profile"
+                                    >
+
+                                        <i class="fa-solid fa-address-card"></i>
+
+                                        <span>
+                                            View Profile
+                                        </span>
+
+                                    </a>
+
+
+                                    <!-- Edit Profile -->
+
+                                    <a
+                                        href="{% url 'update_customer' customer.id %}"
+                                        class="action-menu-item edit"
+                                    >
+
+                                        <i class="fa-solid fa-user-pen"></i>
+
+                                        <span>
+                                            Edit Profile
+                                        </span>
+
+                                    </a>
+
+
+                                    <div class="action-menu-divider"></div>
+
+
+                                    {% if customer.is_active %}
+
+                                        <!-- Disconnect -->
+
+                                        <button
+                                            type="button"
+                                            class="action-menu-item disconnect"
+                                            onclick="openConfirmationModal(
+                                                'disconnect-form-{{ customer.id }}',
+                                                'Disconnect Consumer',
+                                                'Are you sure you want to disconnect {{ customer.firstname }} {{ customer.lastname }}?'
+                                            )"
+                                        >
+
+                                            <i class="fa-solid fa-plug-circle-xmark"></i>
+
+                                            <span>
+                                                Disconnect
+                                            </span>
+
+                                        </button>
+
+
+                                        <form
+                                            id="disconnect-form-{{ customer.id }}"
+                                            method="POST"
+                                            action="{% url 'disconnect_customer' customer.id %}"
+                                            style="display: none;"
+                                        >
+
+                                            {% csrf_token %}
+
+                                        </form>
+
+                                    {% else %}
+
+                                        <!-- Reconnect -->
+
+                                        <button
+                                            type="button"
+                                            class="action-menu-item reconnect"
+                                            onclick="openConfirmationModal(
+                                                'reconnect-form-{{ customer.id }}',
+                                                'Reconnect Consumer',
+                                                'Reconnect {{ customer.firstname }} {{ customer.lastname }} to the water service?'
+                                            )"
+                                        >
+
+                                            <i class="fa-solid fa-plug-circle-check"></i>
+
+                                            <span>
+                                                Reconnect
+                                            </span>
+
+                                        </button>
+
+
+                                        <form
+                                            id="reconnect-form-{{ customer.id }}"
+                                            method="POST"
+                                            action="{% url 'reconnect_customer' customer.id %}"
+                                            style="display: none;"
+                                        >
+
+                                            {% csrf_token %}
+
+                                        </form>
+
+                                    {% endif %}
+
+
+                                    <div class="action-menu-divider"></div>
+
+
+                                    <!-- Delete -->
+
+                                    <button
+                                        type="button"
+                                        class="action-menu-item delete"
+                                        onclick="openConfirmationModal(
+                                            'delete-form-{{ customer.id }}',
+                                            'Delete Record',
+                                            'Are you sure you want to permanently delete {{ customer.firstname }} {{ customer.lastname }}?'
+                                        )"
+                                    >
+
+                                        <i class="fa-solid fa-trash-can"></i>
+
+                                        <span>
+                                            Delete Record
+                                        </span>
+
+                                    </button>
+
+
+                                    <form
+                                        id="delete-form-{{ customer.id }}"
+                                        method="POST"
+                                        action="{% url 'delete_customer' customer.id %}"
+                                        style="display: none;"
+                                    >
+
+                                        {% csrf_token %}
+
+                                    </form>
+
+                                </div>
 
                             </div>
 
@@ -966,15 +1444,18 @@
     <div class="classic-modal">
 
         <!-- Modal Header -->
+
         <div class="modal-header">
 
             <h3>
+
                 <i
                     class="fa-solid fa-file-excel"
                     style="color: #15803d; margin-right: 8px;"
                 ></i>
 
                 Import Customers Matrix
+
             </h3>
 
 
@@ -984,13 +1465,14 @@
                 id="closeModalCross"
                 onclick="toggleUploadModal(false)"
             >
-                &times;
+                ×
             </button>
 
         </div>
 
 
         <!-- Upload Form -->
+
         <form
             method="POST"
             action="{% url 'import_customers' %}"
@@ -1005,17 +1487,22 @@
             <div class="modal-body">
 
                 <p>
+
                     Select target destination allocation parameters
                     along with spreadsheet matrix file
                     (<code>.xlsx</code>, <code>.xls</code>).
+
                 </p>
 
 
                 <!-- Barangay -->
+
                 <div class="modal-form-group">
 
                     <label for="modalBarangaySelect">
+
                         Target Allocation Barangay
+
                     </label>
 
 
@@ -1044,14 +1531,19 @@
                             {% for b in barangays_list %}
 
                                 <option value="{{ b.id }}">
+
                                     {{ b.barangay_name }}
+
                                     ({{ b.municipality }})
+
                                 </option>
 
                             {% empty %}
 
                                 <option disabled>
+
                                     No barangays available
+
                                 </option>
 
                             {% endfor %}
@@ -1064,6 +1556,7 @@
 
 
                 <!-- File Upload -->
+
                 <div
                     class="file-drop-area"
                     id="dropZoneContainer"
@@ -1091,7 +1584,9 @@
 
 
                         <span id="fileLabelText">
+
                             Choose file or drag here
+
                         </span>
 
                     </label>
@@ -1102,6 +1597,7 @@
 
 
             <!-- Modal Footer -->
+
             <div class="modal-footer">
 
                 <button
@@ -1163,7 +1659,7 @@
                 class="close-modal-btn"
                 onclick="closeConfirmationModal()"
             >
-                &times;
+                ×
             </button>
 
         </div>
@@ -1172,7 +1668,10 @@
         <div class="modal-body">
 
             <p id="confirmModalMessage">
-                Are you sure you want to perform this administrative operation?
+
+                Are you sure you want to perform this
+                administrative operation?
+
             </p>
 
         </div>
@@ -1203,9 +1702,6 @@
 
 </dialog>
 
-<!-- =============================================================
-     JAVASCRIPT
-============================================================== -->
 
 <script>
 
@@ -1213,35 +1709,184 @@ let activeFormId = null;
 
 
 /* =========================================================
+   THREE-DOT ACTION MENU
+========================================================= */
+
+function toggleActionMenu(button) {
+
+    const currentMenu =
+        button
+            .closest('.action-menu')
+            .querySelector('.action-menu-dropdown');
+
+
+    const isOpen =
+        currentMenu.classList.contains('show');
+
+
+    /*
+     * Close every other open menu
+     */
+
+    document
+        .querySelectorAll('.action-menu-dropdown.show')
+        .forEach(menu => {
+
+            menu.classList.remove('show');
+
+
+            const trigger =
+                menu
+                    .closest('.action-menu')
+                    .querySelector('.action-menu-trigger');
+
+
+            if (trigger) {
+
+                trigger.classList.remove('active');
+
+            }
+
+        });
+
+
+    /*
+     * Open selected menu
+     */
+
+    if (!isOpen) {
+
+        currentMenu.classList.add('show');
+
+        button.classList.add('active');
+
+    }
+
+}
+
+
+/* =========================================================
+   CLOSE ACTION MENUS WHEN CLICKING OUTSIDE
+========================================================= */
+
+document.addEventListener('click', function(event) {
+
+    if (!event.target.closest('.action-menu')) {
+
+        document
+            .querySelectorAll('.action-menu-dropdown.show')
+            .forEach(menu => {
+
+                menu.classList.remove('show');
+
+
+                const trigger =
+                    menu
+                        .closest('.action-menu')
+                        .querySelector('.action-menu-trigger');
+
+
+                if (trigger) {
+
+                    trigger.classList.remove('active');
+
+                }
+
+            });
+
+    }
+
+});
+
+
+/* =========================================================
+   CLOSE ACTION MENU AFTER ACTION
+========================================================= */
+
+function closeAllActionMenus() {
+
+    document
+        .querySelectorAll('.action-menu-dropdown.show')
+        .forEach(menu => {
+
+            menu.classList.remove('show');
+
+
+            const trigger =
+                menu
+                    .closest('.action-menu')
+                    .querySelector('.action-menu-trigger');
+
+
+            if (trigger) {
+
+                trigger.classList.remove('active');
+
+            }
+
+        });
+
+}
+
+
+/* =========================================================
    CONFIRMATION MODAL
 ========================================================= */
 
-function openConfirmationModal(formId, titleText, messageText) {
+function openConfirmationModal(
+    formId,
+    titleText,
+    messageText
+) {
 
     activeFormId = formId;
 
-    const dialog = document.getElementById('actionConfirmModal');
-    const title = document.getElementById('confirmModalTitle');
-    const message = document.getElementById('confirmModalMessage');
-    const submitBtn = document.getElementById('confirmModalSubmitBtn');
+
+    /*
+     * Close action menu
+     */
+
+    closeAllActionMenus();
+
+
+    const dialog =
+        document.getElementById('actionConfirmModal');
+
+
+    const title =
+        document.getElementById('confirmModalTitle');
+
+
+    const message =
+        document.getElementById('confirmModalMessage');
+
+
+    const submitBtn =
+        document.getElementById('confirmModalSubmitBtn');
+
 
     title.innerText = titleText;
+
     message.innerText = messageText;
 
 
     /*
-     * Reset button styling first
+     * Reset button
      */
+
     submitBtn.className = "btn-action";
 
 
     /*
      * Delete
      */
+
     if (formId.includes('delete')) {
 
         submitBtn.classList.add('delete');
-        submitBtn.innerText = "Delete Permanently";
+
+        submitBtn.innerText =
+            "Delete Permanently";
 
     }
 
@@ -1249,10 +1894,13 @@ function openConfirmationModal(formId, titleText, messageText) {
     /*
      * Disconnect
      */
+
     else if (formId.includes('disconnect')) {
 
         submitBtn.classList.add('disconnect');
-        submitBtn.innerText = "Confirm Disconnect";
+
+        submitBtn.innerText =
+            "Confirm Disconnect";
 
     }
 
@@ -1260,10 +1908,13 @@ function openConfirmationModal(formId, titleText, messageText) {
     /*
      * Reconnect
      */
+
     else if (formId.includes('reconnect')) {
 
         submitBtn.classList.add('reconnect');
-        submitBtn.innerText = "Confirm Reconnect";
+
+        submitBtn.innerText =
+            "Confirm Reconnect";
 
     }
 
@@ -1271,15 +1922,21 @@ function openConfirmationModal(formId, titleText, messageText) {
     /*
      * Submit selected form
      */
+
     submitBtn.onclick = function() {
 
-        if (activeFormId) {
+        if (!activeFormId) {
+            return;
+        }
 
-            const form = document.getElementById(activeFormId);
 
-            if (form) {
-                form.submit();
-            }
+        const form =
+            document.getElementById(activeFormId);
+
+
+        if (form) {
+
+            form.submit();
 
         }
 
@@ -1287,6 +1944,7 @@ function openConfirmationModal(formId, titleText, messageText) {
 
 
     dialog.showModal();
+
 }
 
 
@@ -1296,13 +1954,19 @@ function openConfirmationModal(formId, titleText, messageText) {
 
 function closeConfirmationModal() {
 
-    const dialog = document.getElementById('actionConfirmModal');
+    const dialog =
+        document.getElementById('actionConfirmModal');
+
 
     if (dialog.open) {
+
         dialog.close();
+
     }
 
+
     activeFormId = null;
+
 }
 
 
@@ -1312,14 +1976,19 @@ function closeConfirmationModal() {
 
 function toggleUploadModal(visible) {
 
-    const modal = document.getElementById('uploadModal');
+    const modal =
+        document.getElementById('uploadModal');
 
-    modal.style.display = visible ? 'flex' : 'none';
+
+    modal.style.display =
+        visible ? 'flex' : 'none';
 
 
     if (!visible) {
 
-        const form = document.getElementById('excelUploadForm');
+        const form =
+            document.getElementById('excelUploadForm');
+
 
         form.reset();
 
@@ -1327,35 +1996,55 @@ function toggleUploadModal(visible) {
         const dropZone =
             document.getElementById('dropZoneContainer');
 
+
         const labelText =
             document.getElementById('fileLabelText');
+
 
         const icon =
             document.getElementById('uploadIcon');
 
 
-        dropZone.classList.remove('file-staged');
+        dropZone.classList.remove(
+            'file-staged'
+        );
+
 
         labelText.innerText =
             "Choose file or drag here";
 
+
         labelText.style.color = "";
+
 
         icon.className =
             "fa-solid fa-cloud-arrow-up";
 
 
-        document.getElementById('submitModalBtn').disabled = false;
-
-        document.getElementById('cancelModalBtn').disabled = false;
-
-        document.getElementById('closeModalCross').disabled = false;
+        document.getElementById(
+            'submitModalBtn'
+        ).disabled = false;
 
 
-        document.getElementById('submitIcon').className =
+        document.getElementById(
+            'cancelModalBtn'
+        ).disabled = false;
+
+
+        document.getElementById(
+            'closeModalCross'
+        ).disabled = false;
+
+
+        document.getElementById(
+            'submitIcon'
+        ).className =
             "fa-solid fa-upload";
 
-        document.getElementById('submitText').innerText =
+
+        document.getElementById(
+            'submitText'
+        ).innerText =
             "Upload File";
 
     }
@@ -1370,28 +2059,44 @@ function toggleUploadModal(visible) {
 function handleFileSelection(input) {
 
     const dropZone =
-        document.getElementById('dropZoneContainer');
+        document.getElementById(
+            'dropZoneContainer'
+        );
+
 
     const labelText =
-        document.getElementById('fileLabelText');
+        document.getElementById(
+            'fileLabelText'
+        );
+
 
     const icon =
-        document.getElementById('uploadIcon');
+        document.getElementById(
+            'uploadIcon'
+        );
 
 
-    if (input.files && input.files.length > 0) {
+    if (
+        input.files &&
+        input.files.length > 0
+    ) {
 
         const fileName =
             input.files[0].name;
 
 
-        dropZone.classList.add('file-staged');
+        dropZone.classList.add(
+            'file-staged'
+        );
+
 
         icon.className =
             "fa-solid fa-file-circle-check";
 
+
         labelText.innerText =
             `Selected: ${fileName}`;
+
 
         labelText.style.color =
             "#15803d";
@@ -1408,10 +2113,15 @@ function handleFileSelection(input) {
 function handleFormSubmit(event) {
 
     const fileInput =
-        document.getElementById('excelFileInput');
+        document.getElementById(
+            'excelFileInput'
+        );
+
 
     const barangaySelect =
-        document.getElementById('modalBarangaySelect');
+        document.getElementById(
+            'modalBarangaySelect'
+        );
 
 
     if (
@@ -1419,17 +2129,30 @@ function handleFormSubmit(event) {
         barangaySelect.value !== ""
     ) {
 
-        document.getElementById('submitModalBtn').disabled = true;
-
-        document.getElementById('cancelModalBtn').disabled = true;
-
-        document.getElementById('closeModalCross').disabled = true;
+        document.getElementById(
+            'submitModalBtn'
+        ).disabled = true;
 
 
-        document.getElementById('submitIcon').className =
+        document.getElementById(
+            'cancelModalBtn'
+        ).disabled = true;
+
+
+        document.getElementById(
+            'closeModalCross'
+        ).disabled = true;
+
+
+        document.getElementById(
+            'submitIcon'
+        ).className =
             "fa-solid fa-spinner fa-spin";
 
-        document.getElementById('submitText').innerText =
+
+        document.getElementById(
+            'submitText'
+        ).innerText =
             "Processing...";
 
     }
@@ -1444,24 +2167,39 @@ function handleFormSubmit(event) {
 function filterCustomerTable() {
 
     const searchInput =
-        document.getElementById('tableSearch');
+        document.getElementById(
+            'tableSearch'
+        );
+
 
     const barangayFilter =
-        document.getElementById('barangayFilter');
+        document.getElementById(
+            'barangayFilter'
+        );
 
 
     const searchValue =
-        searchInput.value.toLowerCase().trim();
+        searchInput.value
+            .toLowerCase()
+            .trim();
+
 
     const barangayValue =
-        barangayFilter.value.toLowerCase().trim();
+        barangayFilter.value
+            .toLowerCase()
+            .trim();
 
 
     const table =
-        document.getElementById('customerTable');
+        document.getElementById(
+            'customerTable'
+        );
+
 
     const rows =
-        table.querySelectorAll('tbody tr');
+        table.querySelectorAll(
+            'tbody tr'
+        );
 
 
     rows.forEach(row => {
@@ -1469,8 +2207,11 @@ function filterCustomerTable() {
         /*
          * Ignore empty-state row
          */
+
         if (row.cells.length < 5) {
+
             return;
+
         }
 
 
@@ -1485,22 +2226,29 @@ function filterCustomerTable() {
          */
 
         const submitterNo =
-            row.cells[0].textContent
+            row.cells[0]
+                .textContent
                 .toLowerCase()
                 .trim();
+
 
         const fullName =
-            row.cells[1].textContent
+            row.cells[1]
+                .textContent
                 .toLowerCase()
                 .trim();
+
 
         const barangay =
-            row.cells[2].textContent
+            row.cells[2]
+                .textContent
                 .toLowerCase()
                 .trim();
 
+
         const status =
-            row.cells[3].textContent
+            row.cells[3]
+                .textContent
                 .toLowerCase()
                 .trim();
 
@@ -1531,7 +2279,8 @@ function filterCustomerTable() {
          */
 
         row.style.display =
-            matchesSearch && matchesBarangay
+            matchesSearch &&
+            matchesBarangay
                 ? ""
                 : "none";
 
@@ -1546,9 +2295,15 @@ function filterCustomerTable() {
 
 function clearCustomerFilters() {
 
-    document.getElementById('tableSearch').value = "";
+    document.getElementById(
+        'tableSearch'
+    ).value = "";
 
-    document.getElementById('barangayFilter').value = "";
+
+    document.getElementById(
+        'barangayFilter'
+    ).value = "";
+
 
     filterCustomerTable();
 
