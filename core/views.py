@@ -18,6 +18,8 @@ from django.db.models import Sum, Count
 from django.db.models.functions import Coalesce
 import json
 from django.db.models.deletion import ProtectedError
+from django.urls import reverse
+
 
 @login_required(login_url="login-view")
 def admin_dashboard(request):
@@ -565,17 +567,15 @@ def create_bill(request):
             # --------------------------------------------------
             # BILLING MONTH
             # --------------------------------------------------
-            billing_month_raw = request.POST.get("billing_month", "").strip()
+            billing_month_raw = request.POST.get(
+                "billing_month",
+                ""
+            ).strip()
 
             if not billing_month_raw:
-                return render(
-                    request,
-                    "admin/create_bill.html",
-                    {
-                        "customer_data": [],
-                        "barangays": [],
-                        "error": "Billing month is required.",
-                    }
+
+                return redirect(
+                    "create_bill"
                 )
 
             billing_month = datetime.strptime(
@@ -583,26 +583,26 @@ def create_bill(request):
                 "%Y-%m"
             ).date().replace(day=1)
 
+
             # --------------------------------------------------
             # DUE DATE
             # --------------------------------------------------
-            due_date_raw = request.POST.get("due_date", "").strip()
+            due_date_raw = request.POST.get(
+                "due_date",
+                ""
+            ).strip()
 
             if not due_date_raw:
-                return render(
-                    request,
-                    "admin/create_bill.html",
-                    {
-                        "customer_data": [],
-                        "barangays": [],
-                        "error": "Due date is required.",
-                    }
+
+                return redirect(
+                    "create_bill"
                 )
 
             due_date = datetime.strptime(
                 due_date_raw,
                 "%Y-%m-%d"
             ).date()
+
 
             # --------------------------------------------------
             # RATE PER CUBIC METER
@@ -612,57 +612,154 @@ def create_bill(request):
                 "25.00"
             ).strip()
 
-            rate_per_cubic = Decimal(rate_raw or "25.00")
+            rate_per_cubic = Decimal(
+                rate_raw or "25.00"
+            )
 
             if rate_per_cubic < 0:
-                return render(
-                    request,
-                    "admin/create_bill.html",
-                    {
-                        "customer_data": [],
-                        "barangays": [],
-                        "error": "Rate per cubic meter cannot be negative.",
-                    }
+
+                return redirect(
+                    "create_bill"
                 )
 
-            # --------------------------------------------------
+
+            # ==================================================
+            # TARGET BARANGAY
+            # ==================================================
+            selected_barangay = request.POST.get(
+                "barangay",
+                ""
+            ).strip()
+
+
+            # ==================================================
+            # PREVENT DUPLICATE MONTHLY BILLING
+            #
+            # This check happens BEFORE processing customers.
+            # ==================================================
+
+            if selected_barangay:
+
+                # ------------------------------------------------
+                # ALL BARANGAYS
+                # ------------------------------------------------
+                if selected_barangay == "ALL":
+
+                    existing_bill = (
+                        Billing.objects
+                        .filter(
+                            billing_month=billing_month
+                        )
+                        .select_related(
+                            "customer",
+                            "customer__barangay"
+                        )
+                        .first()
+                    )
+
+                    if existing_bill:
+
+                        existing_barangay = (
+                            str(
+                                existing_bill.customer.barangay
+                            )
+                            if existing_bill.customer.barangay
+                            else "Unknown Barangay"
+                        )
+
+                        return redirect(
+                            reverse("create_bill")
+                            + "?already_billed=1"
+                            + "&barangay="
+                            + str(existing_barangay)
+                            + "&billing_month="
+                            + billing_month.strftime("%Y-%m")
+                            + "&scope=all"
+                        )
+
+
+                # ------------------------------------------------
+                # SPECIFIC BARANGAY
+                # ------------------------------------------------
+                else:
+
+                    # Find the actual Barangay object
+                    # based on the value submitted by the form.
+                    #
+                    # Your template currently submits:
+                    #
+                    # "Barangay Name, Municipality"
+                    #
+                    target_barangay = None
+
+                    for barangay in Barangay.objects.all():
+
+                        if str(barangay).strip() == selected_barangay:
+
+                            target_barangay = barangay
+
+                            break
+
+
+                    if target_barangay:
+
+                        existing_bill = (
+                            Billing.objects
+                            .filter(
+                                billing_month=billing_month,
+                                customer__barangay=target_barangay
+                            )
+                            .select_related(
+                                "customer",
+                                "customer__barangay"
+                            )
+                            .first()
+                        )
+
+                        if existing_bill:
+
+                            return redirect(
+                                reverse("create_bill")
+                                + "?already_billed=1"
+                                + "&barangay="
+                                + str(target_barangay)
+                                + "&billing_month="
+                                + billing_month.strftime("%Y-%m")
+                                + "&scope=barangay"
+                            )
+
+
+            # ==================================================
             # CONSUMER DATA
-            # --------------------------------------------------
+            # ==================================================
             consumer_data_raw = request.POST.get(
                 "consumer_data_json",
                 "{}"
             )
 
             try:
+
                 consumer_data = json.loads(
                     consumer_data_raw
                 )
+
             except json.JSONDecodeError:
 
-                return render(
-                    request,
-                    "admin/create_bill.html",
-                    {
-                        "customer_data": [],
-                        "barangays": [],
-                        "error": "Invalid consumer billing data.",
-                    }
+                return redirect(
+                    "create_bill"
                 )
+
 
             if not consumer_data:
 
-                return render(
-                    request,
-                    "admin/create_bill.html",
-                    {
-                        "customer_data": [],
-                        "barangays": [],
-                        "error": "No consumer entries were submitted.",
-                    }
+                return redirect(
+                    "create_bill"
                 )
+
 
             created = 0
             skipped = 0
+
 
             # ==================================================
             # DATABASE TRANSACTION
@@ -688,10 +785,16 @@ def create_bill(request):
                     except Customer.DoesNotExist:
 
                         skipped += 1
+
                         continue
 
+
                     # ------------------------------------------
-                    # DUPLICATE BILLING CHECK
+                    # EXTRA SAFETY DUPLICATE CHECK
+                    #
+                    # Even though we already checked the
+                    # barangay/month above, keep this check
+                    # per customer as an additional protection.
                     # ------------------------------------------
                     if Billing.objects.filter(
                         customer=customer,
@@ -699,15 +802,20 @@ def create_bill(request):
                     ).exists():
 
                         skipped += 1
+
                         continue
+
 
                     # ==========================================
                     # CUSTOMER STATUS
                     # ==========================================
 
                     is_new_customer = (
-                        str(customer.status).lower() == "new"
+                        str(
+                            customer.status
+                        ).lower() == "new"
                     )
+
 
                     # ==========================================
                     # READINGS
@@ -722,10 +830,12 @@ def create_bill(request):
                         )
                     )
 
+
                     current_reading_raw = data.get(
                         "current_reading",
                         ""
                     )
+
 
                     # ------------------------------------------------
                     # NEW CUSTOMER
@@ -738,16 +848,29 @@ def create_bill(request):
 
                         if (
                             current_reading_raw is None
-                            or str(current_reading_raw).strip() == ""
+                            or str(
+                                current_reading_raw
+                            ).strip() == ""
                         ):
-                            current_reading = Decimal("0.00")
-                        else:
+
                             current_reading = Decimal(
-                                str(current_reading_raw)
+                                "0.00"
                             )
 
-                        # New customer should start from zero
-                        previous_reading = Decimal("0.00")
+                        else:
+
+                            current_reading = Decimal(
+                                str(
+                                    current_reading_raw
+                                )
+                            )
+
+
+                        # New customer starts from zero
+                        previous_reading = Decimal(
+                            "0.00"
+                        )
+
 
                     # ------------------------------------------------
                     # EXISTING CUSTOMER
@@ -758,35 +881,52 @@ def create_bill(request):
 
                         if (
                             current_reading_raw is None
-                            or str(current_reading_raw).strip() == ""
+                            or str(
+                                current_reading_raw
+                            ).strip() == ""
                         ):
 
                             skipped += 1
+
                             continue
 
+
                         current_reading = Decimal(
-                            str(current_reading_raw)
+                            str(
+                                current_reading_raw
+                            )
                         )
+
 
                         # --------------------------------------------
                         # CURRENT CANNOT BE LOWER THAN PREVIOUS
                         # --------------------------------------------
-                        if current_reading < previous_reading:
+                        if (
+                            current_reading
+                            < previous_reading
+                        ):
 
                             skipped += 1
+
                             continue
+
 
                     # ==========================================
                     # CALCULATE CONSUMPTION
                     # ==========================================
 
                     consumption = (
-                        current_reading -
-                        previous_reading
+                        current_reading
+                        - previous_reading
                     )
 
+
                     if consumption < 0:
-                        consumption = Decimal("0.00")
+
+                        consumption = Decimal(
+                            "0.00"
+                        )
+
 
                     # ==========================================
                     # ADDITIONAL FEES
@@ -801,6 +941,7 @@ def create_bill(request):
                         )
                     )
 
+
                     reconnection_fee = Decimal(
                         str(
                             data.get(
@@ -809,6 +950,7 @@ def create_bill(request):
                             ) or "0.00"
                         )
                     )
+
 
                     violation_fee = Decimal(
                         str(
@@ -819,6 +961,7 @@ def create_bill(request):
                         )
                     )
 
+
                     penalty_fee = Decimal(
                         str(
                             data.get(
@@ -827,6 +970,7 @@ def create_bill(request):
                             ) or "0.00"
                         )
                     )
+
 
                     # ==========================================
                     # SAVE METER READING
@@ -839,11 +983,15 @@ def create_bill(request):
                         billing_month=billing_month,
 
                         defaults={
-                            "previous_reading": previous_reading,
-                            "current_reading": current_reading,
+                            "previous_reading":
+                                previous_reading,
+
+                            "current_reading":
+                                current_reading,
                         }
 
                     )
+
 
                     # ==========================================
                     # CREATE BILLING
@@ -855,25 +1003,34 @@ def create_bill(request):
 
                         billing_month=billing_month,
 
-                        previous_reading=previous_reading,
+                        previous_reading=
+                            previous_reading,
 
-                        current_reading=current_reading,
+                        current_reading=
+                            current_reading,
 
-                        rate_per_cubic=rate_per_cubic,
+                        rate_per_cubic=
+                            rate_per_cubic,
 
-                        connection_fee=connection_fee,
+                        connection_fee=
+                            connection_fee,
 
-                        reconnection_fee=reconnection_fee,
+                        reconnection_fee=
+                            reconnection_fee,
 
-                        violation_fee=violation_fee,
+                        violation_fee=
+                            violation_fee,
 
-                        penalty_fee=penalty_fee,
+                        penalty_fee=
+                            penalty_fee,
 
-                        due_date=due_date,
+                        due_date=
+                            due_date,
 
                         status="unpaid",
 
                     )
+
 
                     # ==========================================
                     # UPDATE CUSTOMER STATUS
@@ -884,40 +1041,64 @@ def create_bill(request):
                         customer.status = "old"
 
                         customer.save(
-                            update_fields=["status"]
+                            update_fields=[
+                                "status"
+                            ]
                         )
+
 
                     created += 1
 
+
             # ==================================================
-            # REDIRECT
+            # SUCCESS
             # ==================================================
 
-            return redirect("create_bill")
+            return redirect(
+                "create_bill"
+            )
+
 
         # ======================================================
         # INVALID DATA
         # ======================================================
-        except (ValueError, Decimal.InvalidOperation):
+        except (
+            ValueError,
+            InvalidOperation
+        ):
 
-            return redirect("create_bill")
+            return redirect(
+                "create_bill"
+            )
+
 
         # ======================================================
         # OTHER ERROR
         # ======================================================
         except Exception as e:
 
-            print("CREATE BILL ERROR:", e)
+            print(
+                "CREATE BILL ERROR:",
+                e
+            )
 
-            return redirect("create_bill")
+            return redirect(
+                "create_bill"
+            )
+
 
     # ==========================================================
     # GET - LOAD BILLING PAGE
     # ==========================================================
 
-    current_month = date.today().replace(day=1)
+    current_month = (
+        date.today()
+        .replace(day=1)
+    )
+
 
     customer_data = []
+
 
     # ----------------------------------------------------------
     # LOAD CUSTOMERS
@@ -932,6 +1113,7 @@ def create_bill(request):
         )
     )
 
+
     # ==========================================================
     # BUILD CUSTOMER DATA
     # ==========================================================
@@ -944,18 +1126,30 @@ def create_bill(request):
 
         last_reading = (
             MeterReading.objects
-            .filter(customer=customer)
-            .order_by("-billing_month")
+            .filter(
+                customer=customer
+            )
+            .order_by(
+                "-billing_month"
+            )
             .first()
         )
+
 
         # ------------------------------------------------------
         # NEW CUSTOMER
         # ------------------------------------------------------
 
-        if str(customer.status).lower() == "new":
+        if (
+            str(
+                customer.status
+            ).lower() == "new"
+        ):
 
-            previous_reading = Decimal("0.00")
+            previous_reading = Decimal(
+                "0.00"
+            )
+
 
         # ------------------------------------------------------
         # EXISTING CUSTOMER
@@ -967,9 +1161,13 @@ def create_bill(request):
                 last_reading.current_reading
             )
 
+
         else:
 
-            previous_reading = Decimal("0.00")
+            previous_reading = Decimal(
+                "0.00"
+            )
+
 
         # ------------------------------------------------------
         # GET CURRENT MONTH READING
@@ -988,6 +1186,7 @@ def create_bill(request):
             .first()
         )
 
+
         # ------------------------------------------------------
         # BARANGAY
         # ------------------------------------------------------
@@ -1002,27 +1201,36 @@ def create_bill(request):
 
             barangay_name = ""
 
+
         # ------------------------------------------------------
         # STORE CUSTOMER
         # ------------------------------------------------------
 
         customer_data.append({
 
-            "id": customer.id,
+            "id":
+                customer.id,
 
-            "firstname": customer.firstname,
+            "firstname":
+                customer.firstname,
 
-            "lastname": customer.lastname,
+            "lastname":
+                customer.lastname,
 
-            "middlename": customer.middlename,
+            "middlename":
+                customer.middlename,
 
-            "submitter_no": customer.submitter_no,
+            "submitter_no":
+                customer.submitter_no,
 
-            "status": customer.status,
+            "status":
+                customer.status,
 
-            "barangay": barangay_name,
+            "barangay":
+                barangay_name,
 
-            "previous_reading": previous_reading,
+            "previous_reading":
+                previous_reading,
 
             "current_reading": (
                 current_reading
@@ -1032,27 +1240,19 @@ def create_bill(request):
 
         })
 
+
     # ==========================================================
     # BARANGAY LIST
     # ==========================================================
 
-    barangays = []
+    barangays = (
+        Barangay.objects
+        .all()
+        .order_by(
+            "barangay_name"
+        )
+    )
 
-    for customer in customers:
-
-        if customer.barangay:
-
-            barangay_name = str(
-                customer.barangay
-            )
-
-            if barangay_name not in barangays:
-
-                barangays.append(
-                    barangay_name
-                )
-
-    barangays.sort()
 
     # ==========================================================
     # RENDER PAGE
@@ -1062,8 +1262,11 @@ def create_bill(request):
         request,
         "admin/create_bill.html",
         {
-            "customer_data": customer_data,
-            "barangays": barangays,
+            "customer_data":
+                customer_data,
+
+            "barangays":
+                barangays,
         }
     )
 
