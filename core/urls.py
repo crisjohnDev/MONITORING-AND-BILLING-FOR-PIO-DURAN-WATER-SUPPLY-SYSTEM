@@ -32,4 +32,5 @@ urlpatterns = [
     path('disconnection/list/', views.disconnected_list, name="disconnected_list"),
     path('feedbacks/', views.feedback_list, name='feedbacks'),
     path("brgy-list/delete/<int:pk>/", views.delete_brgy, name="delete_brgy"),
+    path("api/keep-alive/", views.keep_alive, name="keep_alive"),
 ]

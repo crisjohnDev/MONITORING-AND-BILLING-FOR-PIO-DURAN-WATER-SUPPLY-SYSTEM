@@ -19,7 +19,14 @@ from django.db.models.functions import Coalesce
 import json
 from django.db.models.deletion import ProtectedError
 from django.urls import reverse
+from django.http import JsonResponse
 
+def keep_alive(request):
+    return JsonResponse({
+        "status": "ok",
+        "service": "Django API",
+        "timestamp": timezone.now().isoformat(),
+    })
 
 @login_required(login_url="login-view")
 def admin_dashboard(request):
